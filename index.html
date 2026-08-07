@@ -204,8 +204,14 @@
 
       <div class="form-actions">
         <button type="submit" class="btn-primary">Generate Diagnosis</button>
-        <button type="button" id="fill-sample" class="btn-secondary">Fill sample data</button>
         <button type="reset" class="btn-ghost">Clear</button>
+      </div>
+
+      <div class="sample-picker-row">
+        <label for="sample-picker" class="sample-picker-label">Demo reseller <span class="opt">(sample data)</span>
+          <select id="sample-picker"></select>
+        </label>
+        <button type="button" id="fill-sample" class="btn-secondary">Load sample</button>
       </div>
     </form>
 
@@ -280,9 +286,10 @@
 
         <div class="block">
           <div class="block-header">
-            <h2>Suggested Email <span class="opt">(auto-generated draft)</span></h2>
+            <h2>Suggested Email <span class="opt">(3 drafts — pick an angle)</span></h2>
             <button type="button" id="copy-email" class="btn-copy">Copy</button>
           </div>
+          <div class="email-variant-tabs" id="email-variant-tabs" role="tablist" aria-label="Email draft angle"></div>
           <pre id="email-draft" class="email-draft">—</pre>
         </div>
 

@@ -460,49 +460,149 @@ function buildProductRecommendation(i, m) {
   return `Recommended focus: ${p.label} (${p.count} ${p.unit} eligible). This is the highest-volume upgrade path identified for this reseller.`;
 }
 
-// ---------- email draft ----------
+// ---------- email drafts (3 pragmatic angles per diagnosis) ----------
 
-function buildEmail(i, m) {
+function money(v) {
+  return v === null ? null : '$' + Math.round(v).toLocaleString('en-US');
+}
+
+// Pushes a new paragraph, inserting exactly one blank-line separator before
+// it — but only when there's prior content to separate from. Prevents the
+// double-blank-line bug that plain `parts.push('')` calls produce whenever
+// the paragraph before them was conditionally skipped.
+function pushPara(parts, text) {
+  if (!text) return;
+  if (parts.length && parts[parts.length - 1] !== '') parts.push('');
+  parts.push(text);
+}
+
+function emailContext(i, m) {
   const rBand = riskBand(m.renewalHealth);
+  const gBand = growthBand(m.growthScore);
   const name = i.resellerName;
-  const subject = name ? `${name} — Partnership check-in and next steps` : 'Partnership check-in and next steps';
+  const contact = i.contactName || '[Contact Name]';
+  const subjectName = name ? `${name} — ` : '';
   const possessive = name ? name + (/s$/i.test(name) ? '’' : '’s') : null;
   const numbersFor = possessive
     ? `${possessive} ${i.quarter}`
     : (i.quarter === 'this quarter' ? i.quarter : `the ${i.quarter}`);
+  const renewalPct = i.renewalRate !== null ? fmt(i.renewalRate, 1) + '%' : null;
+  return { rBand, gBand, name, contact, subjectName, numbersFor, renewalPct };
+}
 
+function buildRetentionEmail(i, m, ctx) {
+  const { rBand, contact, subjectName, numbersFor, renewalPct } = ctx;
   const parts = [];
-  parts.push(`Subject: ${subject}`);
+  parts.push(`Subject: ${subjectName}Renewal check-in — ${i.quarter}`);
   parts.push('');
-  parts.push(`Hi ${i.contactName || '[Contact Name]'},`);
+  parts.push(`Hi ${contact},`);
   parts.push('');
 
-  if (rBand.status === 'critical' || rBand.status === 'serious') {
-    parts.push(`Looking at ${numbersFor} numbers, we noticed a renewal rate of ${i.renewalRate !== null ? fmt(i.renewalRate,1) + '%' : 'unavailable'}, below where we'd like it to be. We'd like to understand the context better and see how we can support retention on these accounts.`);
-  } else if (i.renewalRate !== null) {
-    parts.push(`Looking at ${numbersFor} numbers, the renewal rate stands at ${fmt(i.renewalRate,1)}%, a solid result — thank you for the continued partnership.`);
+  if (renewalPct) {
+    let line = `${numbersFor} renewal rate is at ${renewalPct}`;
+    if (i.agreementsTotal !== null && i.agreementsNotRenewed !== null) {
+      line += ` (${i.agreementsRenewed ?? '—'} renewed, ${i.agreementsNotRenewed} not renewed out of ${i.agreementsTotal} agreements)`;
+    }
+    line += rBand.status === 'critical' || rBand.status === 'serious' ? ", which is below where we'd like it." : '.';
+    parts.push(line);
   }
 
+  if (m.valueRangeRisk) {
+    const vrText = { systemic: 'spread fairly evenly across value ranges, including your highest-value accounts', high: 'concentrated in your high-value accounts ($10k+)', low: 'concentrated in your smaller accounts (under $5k)' }[m.valueRangeRisk];
+    parts.push(`The renewal losses look ${vrText} — worth a closer look at what's driving that segment.`);
+  }
+
+  if (i.clmStatus === 'inactive') {
+    parts.push("I also noticed CLM tracking isn't active on the account yet — turning it on would give both of us better visibility into upcoming renewal dates and reduce last-minute surprises.");
+  }
+
+  if (m.arPct !== null && m.arBenchmark !== null && m.autoRenewScore !== null && autoRenewBand(m.autoRenewScore).status !== 'good') {
+    parts.push(`Auto-renew is running at ${fmt(m.arPct,1)}% versus a ${fmt(m.arBenchmark,1)}% benchmark — enabling it on more agreements would take passive churn off the table for future quarters.`);
+  }
+
+  pushPara(parts, `Here's what I'd propose: a 20-minute call this week to walk through the accounts at risk, confirm the reasons behind any non-renewals, and agree on a concrete save plan before next quarter's cycle starts. ${buildNextAction(i, m)}`);
+  parts.push('');
+  parts.push('What does your calendar look like Wednesday or Thursday?');
+  parts.push('');
+  parts.push('Best regards,');
+  parts.push('[Your Name]');
+  return parts.join('\n');
+}
+
+function buildGrowthUpsellEmail(i, m, ctx) {
+  const { gBand, contact, subjectName, numbersFor } = ctx;
+  const parts = [];
+  parts.push(`Subject: ${subjectName}Growth opportunity — ${i.quarter}`);
+  parts.push('');
+  parts.push(`Hi ${contact},`);
+  parts.push('');
+
   if (m.growthScore !== null) {
-    const gBand = growthBand(m.growthScore);
+    const bits = [];
+    if (i.arrGrowth !== null) bits.push(`ARR up ${fmt(i.arrGrowth,1)}%`);
+    if (m.salesGrowthPct !== null) bits.push(`sales up ${fmt(m.salesGrowthPct,1)}% year-over-year`);
+    if (i.licensesDelta !== null) bits.push(`licenses up ${fmt(i.licensesDelta,1)}%`);
+    const detail = bits.length ? ` (${bits.join(', ')})` : '';
     if (gBand.label === 'Strong growth' || gBand.label === 'Growth') {
-      parts.push('We also noticed positive momentum in the business over the past few months — congratulations on the results.');
-    } else if (gBand.label === 'Decline') {
-      parts.push('We also noticed some recent slowdown in growth and would like to understand if there is anything we can help with.');
+      parts.push(`${numbersFor} numbers show real momentum${detail} — congratulations, that's a strong quarter.`);
+    } else {
+      parts.push(`${numbersFor} numbers${detail} are where I wanted to start this conversation.`);
     }
   }
 
   if (m.anyUpsellData && m.dominantPath && m.dominantPath.count > 0) {
-    parts.push(`We also identified an upgrade opportunity in ${m.dominantPath.label}, which could bring additional value to your end customers. We'd love to walk you through the details.`);
+    pushPara(parts, `While reviewing the account I found a concrete upgrade opportunity: ${m.dominantPath.count} ${m.dominantPath.unit} eligible for ${m.dominantPath.label}.`);
+    parts.push(`At current volumes, that's a meaningful expansion opportunity for both sides — happy to put together numbers so you can see the exact impact on your book.`);
+  } else {
+    pushPara(parts, "I didn't see upsell-eligible volume flagged on the account yet — worth a quick audit together to confirm, since accounts with this growth profile usually have upgrade headroom somewhere in the license mix.");
   }
 
+  pushPara(parts, `Next step on my side: ${buildNextAction(i, m)}`);
   parts.push('');
-  parts.push('Could we schedule a call in the next few days?');
+  parts.push('Could we grab 30 minutes for a working session on this — happy to bring a draft proposal?');
   parts.push('');
   parts.push('Best regards,');
   parts.push('[Your Name]');
-
   return parts.join('\n');
+}
+
+function buildQbrEmail(i, m, ctx) {
+  const { contact, subjectName } = ctx;
+  const pBand = priorityBand(m.overallPriority);
+  const rBand = riskBand(m.renewalHealth);
+  const gBand = growthBand(m.growthScore);
+  const aBand = autoRenewBand(m.autoRenewScore);
+  const uBand = upsellBand(m.upsellScore);
+
+  const parts = [];
+  parts.push(`Subject: ${subjectName}${i.quarter} business review`);
+  parts.push('');
+  parts.push(`Hi ${contact},`);
+  parts.push('');
+  parts.push(`Ahead of our quarterly check-in, here's a quick summary of where ${ctx.name || 'the account'} stands based on ${i.quarter}'s numbers:`);
+  parts.push('');
+  if (i.renewalRate !== null) parts.push(`- Renewal rate: ${fmt(i.renewalRate,1)}% (${rBand.label.toLowerCase()} risk)`);
+  if (i.salesCurrent12m !== null) parts.push(`- Sales, trailing 12m: ${money(i.salesCurrent12m)}${i.salesPrevious12m !== null ? ` (vs. ${money(i.salesPrevious12m)} prior period)` : ''}`);
+  if (m.growthScore !== null) parts.push(`- Growth: ${gBand.label.toLowerCase()}${m.salesGrowthPct !== null ? ` (sales ${fmt(m.salesGrowthPct,1)}% YoY)` : ''}`);
+  if (m.autoRenewScore !== null) parts.push(`- Auto-renew: ${aBand.label.toLowerCase()}${m.arPct !== null ? ` (${fmt(m.arPct,1)}%)` : ''}`);
+  if (m.upsellScore !== null) parts.push(`- Upgrade opportunity: ${uBand.label.toLowerCase()}${m.anyUpsellData && m.dominantPath && m.dominantPath.count > 0 ? ` — ${m.dominantPath.count} ${m.dominantPath.unit} eligible for ${m.dominantPath.label}` : ''}`);
+  if (m.sizeShare !== null) parts.push(`- Account size: ${fmt(m.sizeShare,1)}% of the in-country business`);
+  pushPara(parts, `Overall I'd flag this account as ${pBand.label.toLowerCase()} priority this quarter. ${buildNextAction(i, m)}`);
+  parts.push('');
+  parts.push('Let me know a time that works for a 30-minute review — I\'ll bring the full breakdown.');
+  parts.push('');
+  parts.push('Best regards,');
+  parts.push('[Your Name]');
+  return parts.join('\n');
+}
+
+function buildEmailVariants(i, m) {
+  const ctx = emailContext(i, m);
+  return [
+    { label: 'Retention-focused', text: buildRetentionEmail(i, m, ctx) },
+    { label: 'Growth & upsell', text: buildGrowthUpsellEmail(i, m, ctx) },
+    { label: 'Quarterly review', text: buildQbrEmail(i, m, ctx) },
+  ];
 }
 
 // ---------- render ----------
@@ -574,8 +674,34 @@ function render(i, m) {
 
   document.getElementById('product-recommendation').textContent = buildProductRecommendation(i, m);
   document.getElementById('next-action').textContent = buildNextAction(i, m);
-  document.getElementById('email-draft').textContent = buildEmail(i, m);
+  renderEmailVariants(buildEmailVariants(i, m));
 }
+
+// ---------- email variant tabs ----------
+
+let currentEmailVariants = [];
+
+function renderEmailVariants(variants) {
+  currentEmailVariants = variants;
+  const tabs = document.getElementById('email-variant-tabs');
+  tabs.innerHTML = variants.map((v, idx) =>
+    `<button type="button" class="email-tab" role="tab" aria-selected="${idx === 0}" data-index="${idx}">${v.label}</button>`
+  ).join('');
+  showEmailVariant(0);
+}
+
+function showEmailVariant(idx) {
+  document.getElementById('email-draft').textContent = currentEmailVariants[idx].text;
+  document.querySelectorAll('#email-variant-tabs .email-tab').forEach(btn => {
+    btn.setAttribute('aria-selected', String(Number(btn.dataset.index) === idx));
+  });
+}
+
+document.getElementById('email-variant-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.email-tab');
+  if (!btn) return;
+  showEmailVariant(Number(btn.dataset.index));
+});
 
 // ---------- copy email ----------
 
@@ -609,7 +735,7 @@ function flashCopyButton(btn, label) {
 
 const persistedFieldIds = Array.from(form.querySelectorAll('input, select'))
   .map(el => el.id)
-  .filter(Boolean);
+  .filter(id => Boolean(id) && id !== 'sample-picker');
 
 function saveToStorage() {
   const data = {};
@@ -643,43 +769,165 @@ form.addEventListener('reset', () => {
 
 loadFromStorage();
 
-// ---------- sample data (for quick testing) ----------
+// ---------- sample data (10 deliberately different resellers, for demos) ----------
+// Each persona is tuned to land on a different combination of score bands and
+// a different Next Action rule, so cycling through them shows the range of
+// distinct outputs the correlation engine can produce from the same model.
+
+const SAMPLE_RESELLERS = [
+  {
+    label: 'Meridian Systems Group — large account, critical renewal risk',
+    data: {
+      resellerName: 'Meridian Systems Group', contactName: 'Dana Whitfield', quarter: 'Q3 2026',
+      renewalRate: 42, agreementsTotal: 60, agreementsRenewed: 25, agreementsPartial: 5, agreementsNotRenewed: 30,
+      clmStatus: 'inactive',
+      vr_0_1: 55, vr_1_5: 48, vr_5_10: 30, vr_10_25: 22, vr_25_50: 15, vr_50_plus: 10,
+      arrGrowth: -8, salesCurrent12m: 2600000, salesPrevious12m: 3100000, monthlyAverage: 240000, currentMonthExtrap: 210000,
+      nsbValue: 180000, nsbDelta: -6, licenses: 4200, licensesDelta: -4, endUsers: 9800, endUsersDelta: -3,
+      countrySales12m: 11000000, countryLicenses: 18000,
+      arPct: 18, arCountry: 55, arEurope: 58,
+      up_studio_lic: 6, up_studio_agr: 2, up_proplus_lic: 2, up_proplus_agr: 1, up_ent4_lic: 0, up_ent4_agr: 0,
+    },
+  },
+  {
+    label: 'Brightline Creative Partners — strong renewal, upsell-ready',
+    data: {
+      resellerName: 'Brightline Creative Partners', contactName: 'Priya Nandakumar', quarter: 'Q3 2026',
+      renewalRate: 96, agreementsTotal: 50, agreementsRenewed: 48, agreementsPartial: 1, agreementsNotRenewed: 1,
+      clmStatus: 'active',
+      vr_0_1: 97, vr_1_5: 96, vr_5_10: 95, vr_10_25: 94, vr_25_50: 93, vr_50_plus: 92,
+      arrGrowth: 22, salesCurrent12m: 980000, salesPrevious12m: 740000, monthlyAverage: 82000, currentMonthExtrap: 92000,
+      nsbValue: 210000, nsbDelta: 24, licenses: 3100, licensesDelta: 19, endUsers: 7200, endUsersDelta: 16,
+      countrySales12m: 9500000, countryLicenses: 26000,
+      arPct: 68, arCountry: 54, arEurope: 57,
+      up_studio_lic: 500, up_studio_agr: 120, up_proplus_lic: 250, up_proplus_agr: 70, up_ent4_lic: 80, up_ent4_agr: 20,
+    },
+  },
+  {
+    label: 'Coastal Office Systems — healthy renewal, auto-renew gap',
+    data: {
+      resellerName: 'Coastal Office Systems', contactName: 'Marcus Delgado', quarter: 'Q3 2026',
+      renewalRate: 83, agreementsTotal: 70, agreementsRenewed: 58, agreementsPartial: 6, agreementsNotRenewed: 6,
+      clmStatus: 'active',
+      arrGrowth: 3, salesCurrent12m: 510000, salesPrevious12m: 495000, monthlyAverage: 43000, currentMonthExtrap: 42000,
+      nsbValue: 60000, nsbDelta: 2, licenses: 1800, licensesDelta: 1, endUsers: 4100, endUsersDelta: 1,
+      countrySales12m: 8000000, countryLicenses: 20000,
+      arPct: 16, arCountry: 57, arEurope: 59,
+      up_studio_lic: 4, up_studio_agr: 2, up_proplus_lic: 0, up_proplus_agr: 0, up_ent4_lic: 0, up_ent4_agr: 0,
+    },
+  },
+  {
+    label: 'Union & Wells Marketing — healthy renewal, growth slowing',
+    data: {
+      resellerName: 'Union & Wells Marketing', contactName: 'Sophie Larkin', quarter: 'Q3 2026',
+      renewalRate: 89, agreementsTotal: 45, agreementsRenewed: 40, agreementsPartial: 3, agreementsNotRenewed: 2,
+      clmStatus: 'active',
+      arrGrowth: -14, salesCurrent12m: 310000, salesPrevious12m: 430000, monthlyAverage: 28000, currentMonthExtrap: 24000,
+      nsbValue: 40000, nsbDelta: -11, licenses: 1200, licensesDelta: -9, endUsers: 2600, endUsersDelta: -6,
+      countrySales12m: 7000000, countryLicenses: 16000,
+      arPct: 54, arCountry: 55, arEurope: 57,
+      up_studio_lic: 3, up_studio_agr: 1, up_proplus_lic: 0, up_proplus_agr: 0, up_ent4_lic: 0, up_ent4_agr: 0,
+    },
+  },
+  {
+    label: 'Foundry Nine Studio — small reseller, fast growth',
+    data: {
+      resellerName: 'Foundry Nine Studio', contactName: 'Alex Reyes', quarter: 'Q3 2026',
+      renewalRate: 86, agreementsTotal: 12, agreementsRenewed: 11, agreementsPartial: 1, agreementsNotRenewed: 0,
+      clmStatus: 'active',
+      arrGrowth: 34, salesCurrent12m: 85000, salesPrevious12m: 52000, monthlyAverage: 7000, currentMonthExtrap: 9000,
+      nsbValue: 22000, nsbDelta: 38, licenses: 140, licensesDelta: 30, endUsers: 210, endUsersDelta: 22,
+      countrySales12m: 9000000, countryLicenses: 22000,
+      arPct: 54, arCountry: 55, arEurope: 56,
+      up_studio_lic: 5, up_studio_agr: 1, up_proplus_lic: 0, up_proplus_agr: 0, up_ent4_lic: 0, up_ent4_agr: 0,
+    },
+  },
+  {
+    label: 'Hallmark Business Interiors — steady, no urgent action',
+    data: {
+      resellerName: 'Hallmark Business Interiors', contactName: 'Renee Ashford', quarter: 'Q3 2026',
+      renewalRate: 84, agreementsTotal: 55, agreementsRenewed: 46, agreementsPartial: 5, agreementsNotRenewed: 4,
+      clmStatus: 'active',
+      arrGrowth: 4, salesCurrent12m: 460000, salesPrevious12m: 440000, monthlyAverage: 38000, currentMonthExtrap: 39000,
+      nsbValue: 55000, nsbDelta: 3, licenses: 1500, licensesDelta: 2, endUsers: 3400, endUsersDelta: 2,
+      countrySales12m: 9000000, countryLicenses: 19000,
+      arPct: 58, arCountry: 55, arEurope: 57,
+      up_studio_lic: 6, up_studio_agr: 2, up_proplus_lic: 0, up_proplus_agr: 0, up_ent4_lic: 0, up_ent4_agr: 0,
+    },
+  },
+  {
+    label: 'Vantage Point Consulting — renewal risk + upsell opportunity',
+    data: {
+      resellerName: 'Vantage Point Consulting', contactName: 'Owen McAllister', quarter: 'Q3 2026',
+      renewalRate: 45, agreementsTotal: 48, agreementsRenewed: 22, agreementsPartial: 6, agreementsNotRenewed: 20,
+      clmStatus: 'inactive',
+      arrGrowth: 2, salesCurrent12m: 400000, salesPrevious12m: 390000, monthlyAverage: 34000, currentMonthExtrap: 33000,
+      nsbValue: 50000, nsbDelta: 1, licenses: 1400, licensesDelta: 0, endUsers: 3000, endUsersDelta: 0,
+      countrySales12m: 8500000, countryLicenses: 17000,
+      arPct: 48, arCountry: 55, arEurope: 57,
+      up_studio_lic: 350, up_studio_agr: 80, up_proplus_lic: 150, up_proplus_agr: 40, up_ent4_lic: 40, up_ent4_agr: 10,
+    },
+  },
+  {
+    label: 'Silverline Office Group — moderate renewal risk',
+    data: {
+      resellerName: 'Silverline Office Group', contactName: 'Katrina Voss', quarter: 'Q3 2026',
+      renewalRate: 45, agreementsTotal: 40, agreementsRenewed: 17, agreementsPartial: 5, agreementsNotRenewed: 18,
+      clmStatus: 'active',
+      arrGrowth: 1, salesCurrent12m: 250000, salesPrevious12m: 245000, monthlyAverage: 21000, currentMonthExtrap: 20000,
+      nsbValue: 30000, nsbDelta: 0, licenses: 900, licensesDelta: 0, endUsers: 2000, endUsersDelta: 0,
+      countrySales12m: 8000000, countryLicenses: 15000,
+      arPct: 55, arCountry: 55, arEurope: 57,
+      up_studio_lic: 4, up_studio_agr: 1, up_proplus_lic: 0, up_proplus_agr: 0, up_ent4_lic: 0, up_ent4_agr: 0,
+    },
+  },
+  {
+    label: 'Continental Design Alliance — strategic account, upsell headroom',
+    data: {
+      resellerName: 'Continental Design Alliance', contactName: 'Julia Bergstrom', quarter: 'Q3 2026',
+      renewalRate: 97, agreementsTotal: 90, agreementsRenewed: 88, agreementsPartial: 1, agreementsNotRenewed: 1,
+      clmStatus: 'active',
+      arrGrowth: 7, salesCurrent12m: 2400000, salesPrevious12m: 2250000, monthlyAverage: 200000, currentMonthExtrap: 205000,
+      nsbValue: 260000, nsbDelta: 6, licenses: 6200, licensesDelta: 5, endUsers: 14000, endUsersDelta: 4,
+      countrySales12m: 10000000, countryLicenses: 24000,
+      arPct: 74, arCountry: 55, arEurope: 57,
+      up_studio_lic: 100, up_studio_agr: 25, up_proplus_lic: 300, up_proplus_agr: 70, up_ent4_lic: 1400, up_ent4_agr: 300,
+    },
+  },
+  {
+    label: 'Atlas Peak Reseller — minimal data (partial form demo)',
+    data: {
+      resellerName: 'Atlas Peak Reseller', quarter: 'Q3 2026',
+      renewalRate: 75,
+      clmStatus: 'active',
+    },
+  },
+];
+
+function populateSamplePicker() {
+  const picker = document.getElementById('sample-picker');
+  picker.innerHTML = SAMPLE_RESELLERS.map((s, idx) => `<option value="${idx}">${s.label}</option>`).join('');
+}
 
 function fillSample() {
-  const sample = {
-    resellerName: 'Nordic Digital Solutions',
-    contactName: 'Erik Larsen',
-    quarter: 'Q3 2026',
-    renewalRate: 68,
-    agreementsTotal: 40,
-    agreementsRenewed: 27,
-    agreementsPartial: 6,
-    agreementsNotRenewed: 7,
-    clmStatus: 'active',
-    vr_0_1: 82, vr_1_5: 75, vr_5_10: 70, vr_10_25: 58, vr_25_50: 50, vr_50_plus: 45,
-    arrGrowth: 6,
-    salesCurrent12m: 420000,
-    salesPrevious12m: 380000,
-    monthlyAverage: 35000,
-    currentMonthExtrap: 31000,
-    nsbValue: 95000,
-    nsbDelta: 9,
-    licenses: 260,
-    licensesDelta: 4,
-    endUsers: 610,
-    endUsersDelta: 3,
-    countrySales12m: 6200000,
-    countryLicenses: 5400,
-    arPct: 41,
-    arCountry: 55,
-    arEurope: 58,
-    up_studio_lic: 34, up_studio_agr: 12,
-    up_proplus_lic: 9, up_proplus_agr: 4,
-    up_ent4_lic: 3, up_ent4_agr: 1,
-  };
-  for (const [key, value] of Object.entries(sample)) {
+  const picker = document.getElementById('sample-picker');
+  const persona = SAMPLE_RESELLERS[picker.selectedIndex] || SAMPLE_RESELLERS[0];
+
+  for (const id of persistedFieldIds) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  }
+  for (const [key, value] of Object.entries(persona.data)) {
     const el = document.getElementById(key);
     if (el) el.value = value;
   }
+
+  resultsBody.hidden = true;
+  emptyHint.hidden = false;
+  renewalRateError.hidden = true;
+  renewalRateInput.removeAttribute('aria-invalid');
+
   saveToStorage();
 }
+
+populateSamplePicker();
