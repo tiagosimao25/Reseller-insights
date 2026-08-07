@@ -28,7 +28,17 @@
     <!-- ============ FORM ============ -->
     <form id="input-form" class="panel form-panel">
 
-      <div class="reseller-id">
+      <nav class="section-nav" id="section-nav" aria-label="Jump to form section">
+        <a href="#section-reseller" data-target="section-reseller">Reseller</a>
+        <a href="#section-renewal" data-target="section-renewal">Renewal &amp; Retention</a>
+        <a href="#section-growth" data-target="section-growth">Growth</a>
+        <a href="#section-nsb" data-target="section-nsb">NSB / Licenses / Users</a>
+        <a href="#section-country" data-target="section-country">Country Totals</a>
+        <a href="#section-autorenew" data-target="section-autorenew">Auto-Renew</a>
+        <a href="#section-upsell" data-target="section-upsell">Upsell</a>
+      </nav>
+
+      <div class="reseller-id" id="section-reseller">
         <label class="reseller-id-label" for="resellerName">Reseller</label>
         <input type="text" id="resellerName" class="reseller-id-input" placeholder="Reseller / company name" autocomplete="off">
         <p class="field-hint">Used to personalize the diagnosis header and the suggested email.</p>
@@ -39,7 +49,7 @@
         <p class="field-hint">Fills in the "[Contact Name]" greeting in the suggested email.</p>
       </div>
 
-      <fieldset>
+      <fieldset id="section-renewal">
         <legend>Renewal &amp; Retention</legend>
 
         <label>Quarter under review
@@ -101,7 +111,7 @@
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset id="section-growth">
         <legend>Growth</legend>
         <div class="grid-2">
           <label>ARR Growth for the quarter (%)
@@ -122,7 +132,7 @@
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset id="section-nsb">
         <legend>NSB, Licenses &amp; End Users <span class="opt">(trailing 12 months)</span></legend>
         <div class="grid-3">
           <label>NSB ($)
@@ -146,7 +156,7 @@
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset id="section-country">
         <legend>Country Totals <span class="opt">(to size the reseller)</span></legend>
         <div class="grid-2">
           <label>Country sales, 12m ($)
@@ -158,7 +168,7 @@
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset id="section-autorenew">
         <legend>Auto-Renew</legend>
         <div class="grid-3">
           <label>Reseller AR %
@@ -179,7 +189,7 @@
         </div>
       </fieldset>
 
-      <fieldset>
+      <fieldset id="section-upsell">
         <legend>Upsell Opportunity</legend>
         <fieldset class="upsell-row">
           <legend class="upsell-label">Acrobat Standard/Pro → Studio</legend>

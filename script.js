@@ -52,6 +52,41 @@ form.addEventListener('submit', (e) => {
 document.getElementById('fill-sample').addEventListener('click', fillSample);
 document.getElementById('copy-email').addEventListener('click', copyEmail);
 
+// ---------- section nav (jump-to bar, purely navigational — no scoring impact) ----------
+
+(function setupSectionNav() {
+  const nav = document.getElementById('section-nav');
+  if (!nav) return;
+  const links = Array.from(nav.querySelectorAll('a'));
+  const sections = links
+    .map(a => document.getElementById(a.dataset.target))
+    .filter(Boolean);
+
+  nav.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (!link) return;
+    e.preventDefault();
+    const target = document.getElementById(link.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  function updateActiveLink() {
+    const navBottom = nav.getBoundingClientRect().bottom;
+    let activeIdx = 0;
+    sections.forEach((sec, idx) => {
+      if (sec.getBoundingClientRect().top - navBottom < 40) activeIdx = idx;
+    });
+    links.forEach((a, idx) => a.classList.toggle('active', idx === activeIdx));
+  }
+
+  // the form scrolls internally on wide screens (sticky panel) but the
+  // whole page scrolls on narrow ones, so listen on both
+  form.addEventListener('scroll', updateActiveLink);
+  window.addEventListener('scroll', updateActiveLink);
+  window.addEventListener('resize', updateActiveLink);
+  updateActiveLink();
+})();
+
 // ---------- helpers ----------
 
 function num(id) {

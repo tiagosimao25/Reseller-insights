@@ -216,6 +216,10 @@ body {
   border-radius: 14px;
   padding: 24px;
   box-shadow: var(--shadow);
+  /* grid items default to min-width:auto (sized to content's min-content),
+     so a non-wrapping child like .section-nav's pill row could otherwise
+     force this whole grid column wider than the viewport */
+  min-width: 0;
 }
 
 .form-panel {
@@ -226,8 +230,53 @@ body {
 }
 
 @media (max-width: 900px) {
-  .form-panel { position: static; max-height: none; }
+  /* overflow-y must be reset too, not just position/max-height — an
+     overflow:auto ancestor establishes the scroll container that
+     position:sticky descendants (like .section-nav) stick against, even
+     when that ancestor's own content never actually overflows it, which
+     stops them from sticking to the real page scroll instead */
+  .form-panel { position: static; max-height: none; overflow-y: visible; }
 }
+
+/* ===== Section nav (jump-to bar) ===== */
+
+.section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: var(--surface-1);
+  margin: -24px -24px 18px;
+  padding: 14px 24px 10px;
+  border-bottom: 1px solid var(--gridline);
+}
+.section-nav::-webkit-scrollbar { display: none; }
+
+@media (max-width: 900px) {
+  /* the -24px bleed is sized to the .panel padding, which overshoots the
+     narrower .app side padding at this width and pushes the page wider
+     than the viewport — stay inset instead of bleeding to the edge */
+  .section-nav { margin: 0 0 14px; padding: 0 0 10px; }
+}
+
+.section-nav a {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.section-nav a:hover { color: var(--text-primary); }
+.section-nav a.active { background: var(--accent); color: #fff; }
 
 /* ===== Reseller identity ===== */
 
