@@ -607,35 +607,25 @@ function buildEmailVariants(i, m) {
 
 // ---------- render ----------
 
-function setTile(id, value, bandInfo) {
+const STATUS_COLOR = {
+  good: 'var(--status-good)',
+  warning: 'var(--status-warning)',
+  serious: 'var(--status-serious)',
+  critical: 'var(--status-critical)',
+  neutral: 'var(--status-neutral)',
+};
+
+// A tile shows one metric exactly once: label, value, status badge, and a
+// fill bar sized off the underlying 0-100 score — no separate meter list.
+function setTile(id, value, bandInfo, score) {
   const tile = document.getElementById(id);
   tile.querySelector('.tile-value').textContent = value;
   const badgeEl = tile.querySelector('.tile-band');
   badgeEl.textContent = bandInfo.label;
   badgeEl.className = 'tile-band badge ' + bandInfo.status;
-}
-
-function renderMeters(rows) {
-  const container = document.getElementById('meters');
-  container.innerHTML = '';
-  const statusColor = {
-    good: 'var(--status-good)',
-    warning: 'var(--status-warning)',
-    serious: 'var(--status-serious)',
-    critical: 'var(--status-critical)',
-    neutral: 'var(--status-neutral)',
-  };
-  for (const r of rows) {
-    const row = document.createElement('div');
-    row.className = 'meter-row';
-    const score = r.score === null ? 0 : r.score;
-    row.innerHTML = `
-      <span class="meter-name">${r.name}</span>
-      <span class="meter-track"><span class="meter-fill" style="width:${score}%;background:${statusColor[r.status]}"></span></span>
-      <span class="meter-num">${r.score === null ? '—' : Math.round(r.score)}</span>
-    `;
-    container.appendChild(row);
-  }
+  const fillEl = tile.querySelector('.tile-fill');
+  fillEl.style.width = (score === null ? 0 : Math.max(0, Math.min(100, score))) + '%';
+  fillEl.style.background = STATUS_COLOR[bandInfo.status] || STATUS_COLOR.neutral;
 }
 
 function render(i, m) {
@@ -649,20 +639,12 @@ function render(i, m) {
   document.getElementById('results-name').textContent = i.resellerName || 'Reseller diagnosis';
   document.getElementById('results-meta').textContent = `${i.quarter} · Overall priority: ${pBand.label}`;
 
-  setTile('tile-priority', m.overallPriority === null ? '—' : Math.round(m.overallPriority), pBand);
-  setTile('tile-risk', m.renewalHealth === null ? '—' : Math.round(m.renewalHealth), rBand);
-  setTile('tile-growth', m.growthScore === null ? '—' : Math.round(m.growthScore), gBand);
-  setTile('tile-autorenew', m.autoRenewScore === null ? '—' : Math.round(m.autoRenewScore), aBand);
-  setTile('tile-upsell', m.upsellScore === null ? '—' : Math.round(m.upsellScore), uBand);
-  setTile('tile-size', m.sizeShare === null ? '—' : fmt(m.sizeShare,1) + '%', sBand);
-
-  renderMeters([
-    { name: 'Renewal Health', score: m.renewalHealth, status: rBand.status },
-    { name: 'Growth', score: m.growthScore, status: gBand.status },
-    { name: 'Auto-Renew', score: m.autoRenewScore, status: aBand.status },
-    { name: 'Upsell Opportunity', score: m.upsellScore, status: uBand.status },
-    { name: 'Overall Priority', score: m.overallPriority, status: pBand.status },
-  ]);
+  setTile('tile-priority', m.overallPriority === null ? '—' : Math.round(m.overallPriority), pBand, m.overallPriority);
+  setTile('tile-risk', m.renewalHealth === null ? '—' : Math.round(m.renewalHealth), rBand, m.renewalHealth);
+  setTile('tile-growth', m.growthScore === null ? '—' : Math.round(m.growthScore), gBand, m.growthScore);
+  setTile('tile-autorenew', m.autoRenewScore === null ? '—' : Math.round(m.autoRenewScore), aBand, m.autoRenewScore);
+  setTile('tile-upsell', m.upsellScore === null ? '—' : Math.round(m.upsellScore), uBand, m.upsellScore);
+  setTile('tile-size', m.sizeShare === null ? '—' : fmt(m.sizeShare,1) + '%', sBand, m.sizeScoreForPriority);
 
   const list = document.getElementById('diagnostic-list');
   list.innerHTML = '';

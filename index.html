@@ -44,7 +44,7 @@
           <input type="text" id="quarter" placeholder="e.g. Q3 2026">
         </label>
 
-        <label class="required">Renewal Rate for the quarter (%)
+        <label class="required"><span class="label-text">Renewal Rate for the quarter (%)</span>
           <input type="number" id="renewalRate" min="0" max="100" step="0.1" aria-describedby="renewalRate-error">
         </label>
         <p class="field-hint">Required — or leave blank and fill in the Agreements counts below to derive it.</p>
@@ -66,7 +66,7 @@
         </div>
         <p class="field-hint">Total is derived automatically from Renewed + Partial + Not Renewed if left blank.</p>
 
-        <label class="required">CLM Status
+        <label class="required"><span class="label-text">CLM Status</span>
           <select id="clmStatus" required>
             <option value="">— select —</option>
             <option value="active">Active</option>
@@ -239,35 +239,39 @@
             <span class="tile-label">Overall Priority</span>
             <span class="tile-value">—</span>
             <span class="tile-band badge">—</span>
+            <span class="tile-track"><span class="tile-fill"></span></span>
           </div>
           <div class="tile" id="tile-risk">
             <span class="tile-label">Renewal Risk</span>
             <span class="tile-value">—</span>
             <span class="tile-band badge">—</span>
+            <span class="tile-track"><span class="tile-fill"></span></span>
           </div>
           <div class="tile" id="tile-growth">
             <span class="tile-label">Growth</span>
             <span class="tile-value">—</span>
             <span class="tile-band badge">—</span>
+            <span class="tile-track"><span class="tile-fill"></span></span>
           </div>
           <div class="tile" id="tile-autorenew">
             <span class="tile-label">Auto-Renew</span>
             <span class="tile-value">—</span>
             <span class="tile-band badge">—</span>
+            <span class="tile-track"><span class="tile-fill"></span></span>
           </div>
           <div class="tile" id="tile-upsell">
             <span class="tile-label">Upsell Opportunity</span>
             <span class="tile-value">—</span>
             <span class="tile-band badge">—</span>
+            <span class="tile-track"><span class="tile-fill"></span></span>
           </div>
           <div class="tile" id="tile-size">
             <span class="tile-label">Reseller Size</span>
             <span class="tile-value">—</span>
             <span class="tile-band badge">—</span>
+            <span class="tile-track"><span class="tile-fill"></span></span>
           </div>
         </div>
-
-        <div class="meters" id="meters"></div>
 
         <div class="block">
           <h2>Diagnosis</h2>
