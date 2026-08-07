@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How it works — Reseller Insights</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <div class="doc">
+
+    <header class="doc-header">
+      <a href="index.html" class="nav-link">← Back to dashboard</a>
+      <h1>How it works</h1>
+      <p class="subtitle">Reseller Insights doesn't store a prewritten answer for every situation. It turns your inputs into a handful of 0–100 scores, then composes the diagnosis, next action and email from small, independently-triggered rules — which is what lets a compact model produce thousands of distinct outcomes instead of a lookup table of canned answers.</p>
+    </header>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Pipeline</span>
+      <h2>From raw fields to a recommendation</h2>
+      <p>Every "Generate Diagnosis" click runs the same five-stage pipeline. Nothing here is random — the same inputs always produce the same output, and every number on screen can be traced back to a field you typed in.</p>
+      <div class="pipeline" id="pipeline"></div>
+    </section>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Core mechanic</span>
+      <h2>Weighted averages that renormalize around missing data</h2>
+      <p>You said yourself that not every field will always be available — that's the norm, not the exception, for reseller data. So instead of requiring every field, each score is a <strong>weighted average of whatever inputs you provided</strong>, with the weights of the missing ones redistributed proportionally across the rest.</p>
+      <p>Worked example: the Growth score normally blends five signals — ARR Growth (30%), Sales Growth (25%), NSB Δ (20%), Licenses Δ (15%), End Users Δ (10%). If you only supply ARR Growth and Sales Growth, the engine doesn't average them against three zeros — it renormalizes: <code>(0.30 × ARR + 0.25 × Sales) ÷ (0.30 + 0.25)</code>, so those two inputs carry their relative weight (55% and 45%) rather than being diluted by data you never gave it. A score only becomes <code>No data</code> when every one of its inputs is missing.</p>
+    </section>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Component scores</span>
+      <h2>Renewal Health</h2>
+      <p>Answers: how likely is this reseller to renew, and how much of that renewal is actually solid rather than propped up by auto-renew or partial deals? Built from the Renewal Rate, CLM status, and — when a Renewal Rate wasn't derived from the same Agreements counts (see below) — the Not-Renewed and Partial ratios.</p>
+      <div id="tbl-renewal-health"></div>
+      <p>CLM Active scores 80, Not Active scores 30 (a fixed 2-point scale, not a formula, since CLM status is binary). A concentrated value-range renewal risk then subtracts a flat penalty from the blended score: <span id="txt-vr-penalty"></span>.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>Growth</h2>
+      <p>Answers: is the business getting bigger or smaller, across as many independent growth signals as you can supply? Each % delta is converted to a score with <code>50 + delta × scale</code> (0% change = 50, i.e. neutral), then blended by weight.</p>
+      <div id="tbl-growth"></div>
+      <p>The <code>scale</code> differs per metric on purpose — a "large" swing means something different for a volatile quarterly figure than for a smoothed trailing-12-month one:</p>
+      <div id="tbl-delta-scale"></div>
+    </section>
+
+    <section class="doc-section">
+      <h2>Auto-Renew</h2>
+      <p>Answers: is passive-churn risk covered? If you give a country or Europe benchmark, the score compares the reseller's AR% against it (<code>50 + (AR% − benchmark) × <span id="txt-ar-scale"></span></code>, so matching the benchmark scores 50). Without a benchmark, the raw AR% is used directly as the score.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>Reseller Size</h2>
+      <p>Answers: how much does this account actually matter — a large reseller in trouble is a different priority than a small one. Computed as a share of country totals (sales, or licenses as a fallback), then mapped onto a curve so the score lines up with the same thresholds used for the Small / Medium / Large / Strategic label — a Strategic reseller (≥20% share) scores near the top, not at a third of it:</p>
+      <div id="tbl-size-curve"></div>
+    </section>
+
+    <section class="doc-section">
+      <h2>Upsell Opportunity</h2>
+      <p>Answers: how much of the license base has an identified upgrade path (Acrobat Standard/Pro → Studio, Creative Cloud Pro → Pro Plus, Creative Cloud Pro Plus → Enterprise Edition 4)? When a total license count is available, the score is the eligible-license ratio × <span id="txt-upsell-scale"></span>. Without a total to normalize against, a capped fallback (raw eligible count × <span id="txt-upsell-fb-scale"></span>, capped at <span id="txt-upsell-fb-cap"></span>) is used instead, so a handful of upgrade-eligible licenses can never overstate confidence into "High" territory on its own.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>Overall Priority</h2>
+      <p>The single number that answers "where should I spend my time first" — a blend of the other scores, weighted by how actionable and consequential each one is:</p>
+      <div id="tbl-priority"></div>
+      <p>Renewal Risk and the Auto-Renew Gap both feed in as <code>100 − score</code>, so risk (not health) drives priority upward — a reseller in trouble is a higher priority to act on than one who's already healthy.</p>
+    </section>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Special cases</span>
+      <h2>Deriving Renewal Rate from Agreements counts</h2>
+      <p>Renewal Rate is the one field the engine insists on having, one way or another — either type the % directly, or supply the Agreements counts (Total, Renewed, Partial, Not Renewed) and it's derived: first from <code>Renewed ÷ Total</code>, or if only Not Renewed is known, from <code>(Total − Not Renewed − Partial) ÷ Total</code>. Total itself is filled in from Renewed + Partial + Not Renewed if you leave it blank.</p>
+      <p>When the rate is derived this way, the Not-Renewed and Partial ratios are <strong>excluded</strong> from Renewal Health's weighted average rather than added on top — they were built from the exact same three numbers as the rate itself, so including both would double-count one data point instead of blending two independent signals.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>Value-range renewal risk</h2>
+      <p>The optional renewal-rate-by-value-range breakdown ($0–1k through $50k+) isn't just displayed — it's read for <em>where</em> the risk is concentrated, because a weak renewal rate driven by small accounts is a different problem than one driven by large ones:</p>
+      <ul class="bullet-list">
+        <li><strong>Systemic</strong> — both a low-value band and a high-value band are under 70%. Broad-based weakness, heaviest penalty.</li>
+        <li><strong>High-value concentration</strong> — the worst band is $10k+ and under 75%. Smaller volume of accounts, disproportionate revenue impact.</li>
+        <li><strong>Low-value concentration</strong> — only bands under $10k are weak. Larger volume, smaller revenue impact, lightest penalty.</li>
+      </ul>
+    </section>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Reference</span>
+      <h2>Diagnosis trigger thresholds</h2>
+      <p>Every raw-value cutoff that triggers a diagnosis bullet or a value-range risk level, exactly as configured — nothing in the diagnosis text is decided by a number that isn't listed here:</p>
+      <div id="tbl-thresholds"></div>
+    </section>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Reference</span>
+      <h2>Score bands</h2>
+      <p>Every score is also translated into a label and a status color for the badges and meters. These are the exact thresholds in use:</p>
+      <div id="tbl-bands"></div>
+    </section>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Text generation</span>
+      <h2>Next Action: a priority-ordered rule list</h2>
+      <p>Once the scores exist, "Next Action" is decided by walking down a short list of rules and returning the <strong>first one that matches</strong> — not by looking up a pre-written answer for every possible score combination:</p>
+      <ol class="rule-list" id="rule-list"></ol>
+      <p>If nothing above matches, the fallback is "keep up regular monitoring" — the neutral, no-action-needed case.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>Why this produces thousands of distinct outputs from a small rule set</h2>
+      <p>The Diagnosis block works differently from Next Action: instead of stopping at the first match, it collects <strong>every</strong> condition that fires, independently. There are roughly 17 such conditions across renewal, growth, size, auto-renew and upsell, each able to land in 2–4 different states depending on the data you provide (or stay silent if that data is missing). Combined, that's enough to generate diagnostic bullet-sets in the thousands without a single sentence being written twice — the variety comes from composition, not from an ever-growing library of pre-written paragraphs. The suggested email and product recommendation are built the same way, assembled from a handful of conditional paragraphs rather than templated per scenario.</p>
+    </section>
+
+    <section class="doc-section">
+      <span class="doc-eyebrow">Field map</span>
+      <h2>Which inputs feed which score</h2>
+      <div class="table-scroll">
+        <table class="spec-table">
+          <thead><tr><th>Form field</th><th>Feeds into</th></tr></thead>
+          <tbody>
+            <tr><td>Renewal Rate / Agreements counts</td><td>Renewal Health, Overall Priority</td></tr>
+            <tr><td>CLM Status</td><td>Renewal Health</td></tr>
+            <tr><td>Renewal Rate by Value Range</td><td>Renewal Health (penalty only)</td></tr>
+            <tr><td>ARR Growth, Sales 12m, NSB/Licenses/End Users Δ</td><td>Growth, Overall Priority</td></tr>
+            <tr><td>Monthly average / current month</td><td>Diagnosis pacing note only (not scored)</td></tr>
+            <tr><td>Reseller AR% / AR &amp; Not-AR value</td><td>Auto-Renew, Renewal Health, Overall Priority</td></tr>
+            <tr><td>Country / Europe AR%</td><td>Auto-Renew benchmark</td></tr>
+            <tr><td>Country sales / licenses</td><td>Reseller Size, Overall Priority</td></tr>
+            <tr><td>Upsell licenses &amp; agreements (×3 paths)</td><td>Upsell Opportunity, Overall Priority, Product Recommendation, Email</td></tr>
+            <tr><td>Reseller name</td><td>Results header &amp; Suggested Email (subject/body) only (not scored)</td></tr>
+            <tr><td>Contact name</td><td>Suggested Email greeting only (not scored)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="doc-footer">
+      <a href="index.html" class="nav-link">← Back to dashboard</a>
+    </footer>
+
+  </div>
+</div>
+<script src="config.js"></script>
+<script src="methodology.js"></script>
+</body>
+</html>

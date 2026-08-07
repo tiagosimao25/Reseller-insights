@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reseller Insights — Correlation Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="app-header">
+    <div class="app-header-top">
+      <h1>Reseller Insights</h1>
+      <a href="methodology.html" class="nav-link">How it works →</a>
+    </div>
+    <p class="subtitle">Enter the reseller's data. The correlation engine cross-references the variables and generates a diagnosis, scores, and next action.</p>
+    <p class="storage-hint">Entries are saved automatically in this browser only (nothing is sent anywhere) so you don't lose them on refresh. Use "Clear" to wipe them.</p>
+  </header>
+
+  <div class="layout">
+
+    <!-- ============ FORM ============ -->
+    <form id="input-form" class="panel form-panel">
+
+      <div class="reseller-id">
+        <label class="reseller-id-label" for="resellerName">Reseller</label>
+        <input type="text" id="resellerName" class="reseller-id-input" placeholder="Reseller / company name" autocomplete="off">
+        <p class="field-hint">Used to personalize the diagnosis header and the suggested email.</p>
+
+        <label class="contact-name-label" for="contactName">Contact name <span class="opt">(optional)</span>
+          <input type="text" id="contactName" placeholder="e.g. Maria Silva" autocomplete="off">
+        </label>
+        <p class="field-hint">Fills in the "[Contact Name]" greeting in the suggested email.</p>
+      </div>
+
+      <fieldset>
+        <legend>Renewal &amp; Retention</legend>
+
+        <label>Quarter under review
+          <input type="text" id="quarter" placeholder="e.g. Q3 2026">
+        </label>
+
+        <label class="required">Renewal Rate for the quarter (%)
+          <input type="number" id="renewalRate" min="0" max="100" step="0.1" aria-describedby="renewalRate-error">
+        </label>
+        <p class="field-hint">Required — or leave blank and fill in the Agreements counts below to derive it.</p>
+        <p class="field-error" id="renewalRate-error" role="alert" hidden>Enter a Renewal Rate, or fill in the Agreements counts below so it can be derived.</p>
+
+        <div class="grid-4">
+          <label>Nº Agreements (total)
+            <input type="number" id="agreementsTotal" min="0" step="1">
+          </label>
+          <label>Nº Renewed
+            <input type="number" id="agreementsRenewed" min="0" step="1">
+          </label>
+          <label>Nº Partial
+            <input type="number" id="agreementsPartial" min="0" step="1">
+          </label>
+          <label>Nº Not Renewed
+            <input type="number" id="agreementsNotRenewed" min="0" step="1">
+          </label>
+        </div>
+        <p class="field-hint">Total is derived automatically from Renewed + Partial + Not Renewed if left blank.</p>
+
+        <label class="required">CLM Status
+          <select id="clmStatus" required>
+            <option value="">— select —</option>
+            <option value="active">Active</option>
+            <option value="inactive">Not active</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Renewal Rate by Value Range <span class="opt">(optional)</span></legend>
+        <div class="grid-3">
+          <label>$0–1k (%)
+            <input type="number" id="vr_0_1" min="0" max="100" step="0.1">
+          </label>
+          <label>$1–5k (%)
+            <input type="number" id="vr_1_5" min="0" max="100" step="0.1">
+          </label>
+          <label>$5–10k (%)
+            <input type="number" id="vr_5_10" min="0" max="100" step="0.1">
+          </label>
+          <label>$10–25k (%)
+            <input type="number" id="vr_10_25" min="0" max="100" step="0.1">
+          </label>
+          <label>$25–50k (%)
+            <input type="number" id="vr_25_50" min="0" max="100" step="0.1">
+          </label>
+          <label>$50k+ (%)
+            <input type="number" id="vr_50_plus" min="0" max="100" step="0.1">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Growth</legend>
+        <div class="grid-2">
+          <label>ARR Growth for the quarter (%)
+            <input type="number" id="arrGrowth" step="0.1">
+          </label>
+          <label>Sales value — current period (12m, $)
+            <input type="number" id="salesCurrent12m" min="0" step="1">
+          </label>
+          <label>Sales value — previous period (12m, $)
+            <input type="number" id="salesPrevious12m" min="0" step="1">
+          </label>
+          <label>Monthly average value ($)
+            <input type="number" id="monthlyAverage" min="0" step="1">
+          </label>
+          <label>Current month (extrapolated, $)
+            <input type="number" id="currentMonthExtrap" min="0" step="1">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>NSB, Licenses &amp; End Users <span class="opt">(trailing 12 months)</span></legend>
+        <div class="grid-3">
+          <label>NSB ($)
+            <input type="number" id="nsbValue" min="0" step="1">
+          </label>
+          <label>Δ NSB (%)
+            <input type="number" id="nsbDelta" step="0.1">
+          </label>
+          <label>Nº Licenses
+            <input type="number" id="licenses" min="0" step="1">
+          </label>
+          <label>Δ Licenses (%)
+            <input type="number" id="licensesDelta" step="0.1">
+          </label>
+          <label>Nº End Users
+            <input type="number" id="endUsers" min="0" step="1">
+          </label>
+          <label>Δ End Users (%)
+            <input type="number" id="endUsersDelta" step="0.1">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Country Totals <span class="opt">(to size the reseller)</span></legend>
+        <div class="grid-2">
+          <label>Country sales, 12m ($)
+            <input type="number" id="countrySales12m" min="0" step="1">
+          </label>
+          <label>Country total licenses
+            <input type="number" id="countryLicenses" min="0" step="1">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Auto-Renew</legend>
+        <div class="grid-3">
+          <label>Reseller AR %
+            <input type="number" id="arPct" min="0" max="100" step="0.1">
+          </label>
+          <label>AR value ($) <span class="opt">(alt.)</span>
+            <input type="number" id="arValue" min="0" step="1">
+          </label>
+          <label>Not-AR value ($) <span class="opt">(alt.)</span>
+            <input type="number" id="notArValue" min="0" step="1">
+          </label>
+          <label>Country average AR %
+            <input type="number" id="arCountry" min="0" max="100" step="0.1">
+          </label>
+          <label>Europe average AR %
+            <input type="number" id="arEurope" min="0" max="100" step="0.1">
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Upsell Opportunity</legend>
+        <fieldset class="upsell-row">
+          <legend class="upsell-label">Acrobat Standard/Pro → Studio</legend>
+          <label>Licenses <input type="number" id="up_studio_lic" min="0" step="1"></label>
+          <label>Agreements <input type="number" id="up_studio_agr" min="0" step="1"></label>
+        </fieldset>
+        <fieldset class="upsell-row">
+          <legend class="upsell-label">Creative Cloud Pro → Pro Plus</legend>
+          <label>Licenses <input type="number" id="up_proplus_lic" min="0" step="1"></label>
+          <label>Agreements <input type="number" id="up_proplus_agr" min="0" step="1"></label>
+        </fieldset>
+        <fieldset class="upsell-row">
+          <legend class="upsell-label">Creative Cloud Pro Plus → Enterprise Edition 4</legend>
+          <label>Licenses <input type="number" id="up_ent4_lic" min="0" step="1"></label>
+          <label>Agreements <input type="number" id="up_ent4_agr" min="0" step="1"></label>
+        </fieldset>
+      </fieldset>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Generate Diagnosis</button>
+        <button type="button" id="fill-sample" class="btn-secondary">Fill sample data</button>
+        <button type="reset" class="btn-ghost">Clear</button>
+      </div>
+    </form>
+
+    <!-- ============ RESULTS ============ -->
+    <section class="panel results-panel">
+
+      <p class="empty-hint" id="empty-hint">Fill in the form and click "Generate Diagnosis" (or "Fill sample data") to see results here.</p>
+
+      <div id="results-body" hidden>
+
+        <div class="results-header">
+          <h2 id="results-name">Reseller diagnosis</h2>
+          <p id="results-meta" class="results-meta">—</p>
+        </div>
+
+        <div class="tiles">
+          <div class="tile" id="tile-priority">
+            <span class="tile-label">Overall Priority</span>
+            <span class="tile-value">—</span>
+            <span class="tile-band badge">—</span>
+          </div>
+          <div class="tile" id="tile-risk">
+            <span class="tile-label">Renewal Risk</span>
+            <span class="tile-value">—</span>
+            <span class="tile-band badge">—</span>
+          </div>
+          <div class="tile" id="tile-growth">
+            <span class="tile-label">Growth</span>
+            <span class="tile-value">—</span>
+            <span class="tile-band badge">—</span>
+          </div>
+          <div class="tile" id="tile-autorenew">
+            <span class="tile-label">Auto-Renew</span>
+            <span class="tile-value">—</span>
+            <span class="tile-band badge">—</span>
+          </div>
+          <div class="tile" id="tile-upsell">
+            <span class="tile-label">Upsell Opportunity</span>
+            <span class="tile-value">—</span>
+            <span class="tile-band badge">—</span>
+          </div>
+          <div class="tile" id="tile-size">
+            <span class="tile-label">Reseller Size</span>
+            <span class="tile-value">—</span>
+            <span class="tile-band badge">—</span>
+          </div>
+        </div>
+
+        <div class="meters" id="meters"></div>
+
+        <div class="block">
+          <h2>Diagnosis</h2>
+          <ul id="diagnostic-list" class="bullet-list"></ul>
+        </div>
+
+        <div class="block">
+          <h2>Product Recommendation</h2>
+          <p id="product-recommendation">—</p>
+        </div>
+
+        <div class="block">
+          <h2>Next Action</h2>
+          <p id="next-action" class="next-action">—</p>
+        </div>
+
+        <div class="block">
+          <div class="block-header">
+            <h2>Suggested Email <span class="opt">(auto-generated draft)</span></h2>
+            <button type="button" id="copy-email" class="btn-copy">Copy</button>
+          </div>
+          <pre id="email-draft" class="email-draft">—</pre>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+</div>
+<script src="config.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
