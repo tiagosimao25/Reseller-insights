@@ -716,12 +716,7 @@ function flashCopyButton(btn, label) {
   }, 1500);
 }
 
-// ---------- export report (CSV, opens directly in Excel) ----------
-
-function csvCell(value) {
-  const str = String(value ?? '');
-  return /[",\r\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
-}
+// ---------- export report (real .xlsx, via the SheetJS library) ----------
 
 function buildReportRows(i, m) {
   const rBand = riskBand(m.renewalHealth);
@@ -759,20 +754,20 @@ function buildReportRows(i, m) {
 
 function exportReport() {
   if (!lastInputs || !lastMetrics) return;
-  const csv = buildReportRows(lastInputs, lastMetrics)
-    .map(row => row.map(csvCell).join(','))
-    .join('\r\n');
-  // leading BOM so Excel (Windows in particular) reads the UTF-8 dashes/accents correctly
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
+  if (typeof XLSX === 'undefined') {
+    alert("Couldn't load the Excel export library — check your connection and try again.");
+    return;
+  }
+
+  const rows = buildReportRows(lastInputs, lastMetrics);
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  sheet['!cols'] = [{ wch: 28 }, { wch: 90 }];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheet, 'Report');
+
   const slug = (lastInputs.resellerName || 'reseller').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'reseller';
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `reseller-insights-${slug}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  XLSX.writeFile(workbook, `reseller-insights-${slug}.xlsx`);
 }
 
 document.getElementById('export-report').addEventListener('click', exportReport);
