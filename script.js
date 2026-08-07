@@ -12,8 +12,6 @@
 // in one place, and the methodology page always describes this exact model.
 // ===================================================================
 
-const STORAGE_KEY = 'reseller-insights:inputs:v1';
-
 const form = document.getElementById('input-form');
 const emptyHint = document.getElementById('empty-hint');
 const resultsBody = document.getElementById('results-body');
@@ -628,7 +626,12 @@ function setTile(id, value, bandInfo, score) {
   fillEl.style.background = STATUS_COLOR[bandInfo.status] || STATUS_COLOR.neutral;
 }
 
+let lastInputs = null;
+let lastMetrics = null;
+
 function render(i, m) {
+  lastInputs = i;
+  lastMetrics = m;
   const rBand = riskBand(m.renewalHealth);
   const gBand = growthBand(m.growthScore);
   const aBand = autoRenewBand(m.autoRenewScore);
@@ -713,43 +716,80 @@ function flashCopyButton(btn, label) {
   }, 1500);
 }
 
-// ---------- local persistence (this browser only, nothing is sent anywhere) ----------
+// ---------- export report (CSV, opens directly in Excel) ----------
 
-const persistedFieldIds = Array.from(form.querySelectorAll('input, select'))
+function csvCell(value) {
+  const str = String(value ?? '');
+  return /[",\r\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+}
+
+function buildReportRows(i, m) {
+  const rBand = riskBand(m.renewalHealth);
+  const gBand = growthBand(m.growthScore);
+  const aBand = autoRenewBand(m.autoRenewScore);
+  const uBand = upsellBand(m.upsellScore);
+  const sBand = sizeBand(m.sizeShare);
+  const pBand = priorityBand(m.overallPriority);
+
+  const rows = [
+    ['Field', 'Value'],
+    ['Reseller', i.resellerName || ''],
+    ['Contact', i.contactName || ''],
+    ['Quarter', i.quarter],
+    ['Overall Priority (score)', m.overallPriority === null ? '' : Math.round(m.overallPriority)],
+    ['Overall Priority (label)', pBand.label],
+    ['Renewal Risk (score)', m.renewalHealth === null ? '' : Math.round(m.renewalHealth)],
+    ['Renewal Risk (label)', rBand.label],
+    ['Growth (score)', m.growthScore === null ? '' : Math.round(m.growthScore)],
+    ['Growth (label)', gBand.label],
+    ['Auto-Renew (score)', m.autoRenewScore === null ? '' : Math.round(m.autoRenewScore)],
+    ['Auto-Renew (label)', aBand.label],
+    ['Upsell Opportunity (score)', m.upsellScore === null ? '' : Math.round(m.upsellScore)],
+    ['Upsell Opportunity (label)', uBand.label],
+    ['Reseller Size (%)', m.sizeShare === null ? '' : fmt(m.sizeShare, 1)],
+    ['Reseller Size (label)', sBand.label],
+  ];
+
+  buildDiagnostic(i, m).forEach((line, idx) => rows.push([`Diagnosis ${idx + 1}`, line]));
+  rows.push(['Product Recommendation', buildProductRecommendation(i, m)]);
+  rows.push(['Next Action', buildNextAction(i, m)]);
+
+  return rows;
+}
+
+function exportReport() {
+  if (!lastInputs || !lastMetrics) return;
+  const csv = buildReportRows(lastInputs, lastMetrics)
+    .map(row => row.map(csvCell).join(','))
+    .join('\r\n');
+  // leading BOM so Excel (Windows in particular) reads the UTF-8 dashes/accents correctly
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const slug = (lastInputs.resellerName || 'reseller').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'reseller';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `reseller-insights-${slug}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('export-report').addEventListener('click', exportReport);
+
+// ---------- form field bookkeeping ----------
+// (the site intentionally keeps no data between visits — every load starts blank)
+
+const dataFieldIds = Array.from(form.querySelectorAll('input, select'))
   .map(el => el.id)
   .filter(id => Boolean(id) && id !== 'sample-picker');
 
-function saveToStorage() {
-  const data = {};
-  for (const id of persistedFieldIds) data[id] = document.getElementById(id).value;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (err) { /* storage unavailable, ignore */ }
-}
-
-function loadFromStorage() {
-  let data;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    data = JSON.parse(raw);
-  } catch (err) {
-    return;
-  }
-  for (const id of persistedFieldIds) {
-    if (data[id] !== undefined) document.getElementById(id).value = data[id];
-  }
-}
-
-form.addEventListener('input', saveToStorage);
-form.addEventListener('change', saveToStorage);
 form.addEventListener('reset', () => {
-  try { localStorage.removeItem(STORAGE_KEY); } catch (err) { /* ignore */ }
   resultsBody.hidden = true;
   emptyHint.hidden = false;
   renewalRateError.hidden = true;
   renewalRateInput.removeAttribute('aria-invalid');
 });
-
-loadFromStorage();
 
 // ---------- sample data (10 deliberately different resellers, for demos) ----------
 // Each persona is tuned to land on a different combination of score bands and
@@ -895,7 +935,7 @@ function fillSample() {
   const picker = document.getElementById('sample-picker');
   const persona = SAMPLE_RESELLERS[picker.selectedIndex] || SAMPLE_RESELLERS[0];
 
-  for (const id of persistedFieldIds) {
+  for (const id of dataFieldIds) {
     const el = document.getElementById(id);
     if (el) el.value = '';
   }
@@ -908,8 +948,6 @@ function fillSample() {
   emptyHint.hidden = false;
   renewalRateError.hidden = true;
   renewalRateInput.removeAttribute('aria-invalid');
-
-  saveToStorage();
 }
 
 populateSamplePicker();

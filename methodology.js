@@ -18,11 +18,11 @@ function cell(value, num) {
 // ---------- pipeline ----------
 
 const PIPELINE_STEPS = [
-  { title: 'Raw inputs', desc: 'Whatever fields you filled in the form — none are mandatory except Renewal Rate (or the Agreements counts it can be derived from) and CLM Status.' },
-  { title: 'Derived fields', desc: 'Agreements Total and Renewal Rate are filled in from related counts when left blank.' },
-  { title: 'Component scores', desc: 'Renewal Health, Growth, Auto-Renew, Reseller Size and Upsell Opportunity — each a 0–100 weighted average.' },
-  { title: 'Overall Priority', desc: 'A weighted blend of the five component scores.' },
-  { title: 'Composed output', desc: 'Diagnosis, Next Action, Product Recommendation and Email — built from independently-triggered rules, not a lookup table.' },
+  { title: 'Your inputs', desc: 'Whatever you type in the form. Only Renewal Rate (or the Agreements counts) and CLM Status are required.' },
+  { title: 'Fill the gaps', desc: 'A few fields, like Renewal Rate, get calculated automatically from related numbers if you leave them blank.' },
+  { title: '5 scores', desc: 'Renewal Health, Growth, Auto-Renew, Reseller Size, Upsell Opportunity — each rated 0–100.' },
+  { title: '1 priority number', desc: 'The 5 scores blend into one Overall Priority score.' },
+  { title: 'Your results', desc: 'Diagnosis, Next Action, product pick, and email — all written from the scores above.' },
 ];
 
 (function renderPipeline() {
@@ -46,18 +46,18 @@ const RENEWAL_HEALTH_LABELS = {
 };
 
 const GROWTH_LABELS = {
-  arr: 'ARR Growth (quarter)',
-  sales: 'Sales Growth (trailing 12m)',
-  nsb: 'NSB Δ (trailing 12m)',
-  licenses: 'Licenses Δ (trailing 12m)',
-  endUsers: 'End Users Δ (trailing 12m)',
+  arr: 'ARR Growth (this quarter)',
+  sales: 'Sales Growth (last 12 months)',
+  nsb: 'New Business change (last 12 months)',
+  licenses: 'Licenses change (last 12 months)',
+  endUsers: 'End Users change (last 12 months)',
 };
 
 const PRIORITY_LABELS = {
   upsell: 'Upsell Opportunity score',
   growth: 'Growth score',
-  renewalRisk: 'Renewal Risk (100 − Renewal Health)',
-  autoRenewGap: 'Auto-Renew Gap (100 − Auto-Renew score)',
+  renewalRisk: 'Renewal Risk (opposite of Renewal Health)',
+  autoRenewGap: 'Auto-Renew Gap (opposite of Auto-Renew score)',
   size: 'Reseller Size score',
 };
 
@@ -155,15 +155,15 @@ const THRESHOLD_LABELS = {
   renewalRate: 'Renewal Rate (%)',
   notRenewedRatio: 'Not-Renewed Ratio',
   partialRatio: 'Partial-Renewal Ratio',
-  arrGrowth: 'ARR Growth (%, quarter)',
-  salesGrowth: 'Sales Growth (%, trailing 12m)',
-  paceRatio: 'Current-month Pace Ratio',
-  nsbDelta: 'NSB Δ (%, trailing 12m)',
-  licensesDelta: 'Licenses Δ (%, trailing 12m)',
-  endUsersDelta: 'End Users Δ (%, trailing 12m)',
-  autoRenewGap: 'Auto-Renew Gap vs. benchmark (points)',
-  upsellRatio: 'Upsell-eligible Ratio (%)',
-  valueRangeRisk: 'Value-range risk bands (worst band %)',
+  arrGrowth: 'ARR Growth (%, this quarter)',
+  salesGrowth: 'Sales Growth (%, last 12 months)',
+  paceRatio: "This month's pace vs. average",
+  nsbDelta: 'New Business change (%, last 12 months)',
+  licensesDelta: 'Licenses change (%, last 12 months)',
+  endUsersDelta: 'End Users change (%, last 12 months)',
+  autoRenewGap: 'Auto-Renew gap vs. benchmark',
+  upsellRatio: 'Upsell-eligible licenses (%)',
+  valueRangeRisk: 'Value-range risk cutoffs (%)',
 };
 
 (function renderThresholds() {
@@ -180,7 +180,3 @@ const THRESHOLD_LABELS = {
 
 document.getElementById('txt-vr-penalty').textContent =
   `systemic −${CONFIG.valueRangeRiskPenalty.systemic}, high-value −${CONFIG.valueRangeRiskPenalty.high}, low-value −${CONFIG.valueRangeRiskPenalty.low} points`;
-document.getElementById('txt-ar-scale').textContent = CONFIG.autoRenewBenchmarkScale.toFixed(1);
-document.getElementById('txt-upsell-scale').textContent = CONFIG.upsellRatioScale.toFixed(1);
-document.getElementById('txt-upsell-fb-scale').textContent = CONFIG.upsellFallback.scale;
-document.getElementById('txt-upsell-fb-cap').textContent = CONFIG.upsellFallback.cap;
