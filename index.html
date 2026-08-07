@@ -178,18 +178,24 @@
         <legend>Upsell Opportunity</legend>
         <fieldset class="upsell-row">
           <legend class="upsell-label">Acrobat Standard/Pro → Studio</legend>
-          <label>Licenses <input type="number" id="up_studio_lic" min="0" step="1"></label>
-          <label>Agreements <input type="number" id="up_studio_agr" min="0" step="1"></label>
+          <div class="upsell-fields">
+            <label>Licenses <input type="number" id="up_studio_lic" min="0" step="1"></label>
+            <label>Agreements <input type="number" id="up_studio_agr" min="0" step="1"></label>
+          </div>
         </fieldset>
         <fieldset class="upsell-row">
           <legend class="upsell-label">Creative Cloud Pro → Pro Plus</legend>
-          <label>Licenses <input type="number" id="up_proplus_lic" min="0" step="1"></label>
-          <label>Agreements <input type="number" id="up_proplus_agr" min="0" step="1"></label>
+          <div class="upsell-fields">
+            <label>Licenses <input type="number" id="up_proplus_lic" min="0" step="1"></label>
+            <label>Agreements <input type="number" id="up_proplus_agr" min="0" step="1"></label>
+          </div>
         </fieldset>
         <fieldset class="upsell-row">
           <legend class="upsell-label">Creative Cloud Pro Plus → Enterprise Edition 4</legend>
-          <label>Licenses <input type="number" id="up_ent4_lic" min="0" step="1"></label>
-          <label>Agreements <input type="number" id="up_ent4_agr" min="0" step="1"></label>
+          <div class="upsell-fields">
+            <label>Licenses <input type="number" id="up_ent4_lic" min="0" step="1"></label>
+            <label>Agreements <input type="number" id="up_ent4_agr" min="0" step="1"></label>
+          </div>
         </fieldset>
       </fieldset>
 
@@ -203,7 +209,14 @@
     <!-- ============ RESULTS ============ -->
     <section class="panel results-panel">
 
-      <p class="empty-hint" id="empty-hint">Fill in the form and click "Generate Diagnosis" (or "Fill sample data") to see results here.</p>
+      <div class="empty-hint" id="empty-hint">
+        <svg class="empty-hint-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M9 17H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M13 21v-5.5a1.5 1.5 0 0 1 3 0V17a1.5 1.5 0 0 0 3 0v-1" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7 7h5M7 10.5h3" stroke-linecap="round"/>
+        </svg>
+        <p>Fill in the form and click "Generate Diagnosis" (or "Fill sample data") to see results here.</p>
+      </div>
 
       <div id="results-body" hidden>
 
