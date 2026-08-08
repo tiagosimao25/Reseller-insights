@@ -239,6 +239,11 @@ body {
 }
 
 /* ===== Section nav (jump-to bar) ===== */
+/* Deliberately NOT bled to the card edges — it stays inset within the same
+   padding every other element in this form uses, so it reads as part of
+   the card instead of a bar pasted over its rounded corners. Sticking to
+   top:0 of the scrolling panel is enough to keep it flush once scrolled;
+   no negative-margin math needed, and nothing to re-tune per breakpoint. */
 
 .section-nav {
   position: sticky;
@@ -251,17 +256,17 @@ body {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   background: var(--surface-1);
-  margin: -24px -24px 18px;
-  padding: 14px 24px 10px;
+  margin: 0 0 18px;
+  padding: 4px 0 12px;
   border-bottom: 1px solid var(--gridline);
 }
 .section-nav::-webkit-scrollbar { display: none; }
 
-@media (max-width: 900px) {
-  /* the -24px bleed is sized to the .panel padding, which overshoots the
-     narrower .app side padding at this width and pushes the page wider
-     than the viewport — stay inset instead of bleeding to the edge */
-  .section-nav { margin: 0 0 14px; padding: 0 0 10px; }
+/* clears the sticky nav's own height so a clicked section's heading lands
+   just below it instead of scrolling to right behind it */
+#section-reseller, #section-renewal, #section-growth, #section-nsb,
+#section-country, #section-autorenew, #section-upsell {
+  scroll-margin-top: 68px;
 }
 
 .section-nav a {
