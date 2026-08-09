@@ -33,8 +33,17 @@
   --font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Dark tokens are defined twice on purpose: once behind the OS preference
+   (for no-JS resilience) and once behind an explicit [data-theme="dark"]
+   (set by the toggle in theme-toggle.js). The toggle always stamps an
+   explicit light or dark choice, so in normal use the JS-driven selector
+   below decides — but if JS fails to load, the page still degrades
+   sensibly by following the OS setting. Guarding the media-query version
+   with :not([data-theme="light"]) means an explicit light choice always
+   wins over a dark OS preference. The default (no stored choice yet) is
+   light, set synchronously by theme-toggle.js before first paint. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --page:           #18160f;
     --surface-1:      #221f19;
@@ -61,6 +70,34 @@
     --status-critical-wash:  rgba(232,87,127,0.16);
     --status-neutral-wash:   rgba(166,160,142,0.16);
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:           #18160f;
+  --surface-1:      #221f19;
+  --surface-sunken: #1d1b15;
+  --text-primary:   #f4f2ec;
+  --text-secondary: #c9c4b7;
+  --text-muted:     #948e7d;
+  --gridline:       #38352a;
+  --border:         rgba(244,242,236,0.10);
+  --shadow:         0 1px 2px rgba(0,0,0,0.2), 0 8px 24px -8px rgba(0,0,0,0.5);
+  --shadow-sm:      0 1px 2px rgba(0,0,0,0.16), 0 4px 12px -6px rgba(0,0,0,0.4);
+  --accent:         #ff6355;
+  --accent-hover:   #ff8577;
+  --accent-wash:    rgba(255,99,85,0.14);
+  --accent-ring:    rgba(255,99,85,0.40);
+  --status-good:      #3fc178;
+  --status-warning:   #e0a934;
+  --status-serious:   #ef9152;
+  --status-critical:  #e8577f;
+  --status-neutral:   #a6a08e;
+  --status-good-wash:      rgba(63,193,120,0.16);
+  --status-warning-wash:   rgba(224,169,52,0.16);
+  --status-serious-wash:   rgba(239,145,82,0.16);
+  --status-critical-wash:  rgba(232,87,127,0.16);
+  --status-neutral-wash:   rgba(166,160,142,0.16);
 }
 
 * { box-sizing: border-box; }
@@ -184,6 +221,34 @@ body {
 .nav-link:hover { color: var(--accent-hover); text-decoration: underline; }
 .nav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
 
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.theme-toggle:hover { color: var(--text-primary); border-color: var(--accent); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.theme-toggle-icon { width: 17px; height: 17px; }
+.theme-toggle-icon-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle-icon-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle-icon-moon { display: block; }
+
 .subtitle {
   margin: 0 0 6px;
   color: var(--text-secondary);
@@ -282,6 +347,7 @@ body {
 }
 .section-nav a:hover { color: var(--text-primary); }
 .section-nav a.active { background: var(--accent); color: #fff; }
+.section-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ===== Reseller identity ===== */
 
@@ -742,10 +808,18 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   margin-bottom: 8px;
 }
 
-.doc-header .nav-link {
-  display: inline-block;
+.doc-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   margin-bottom: 14px;
 }
+
+.doc-header .nav-link {
+  display: inline-block;
+}
+.doc-header-top .nav-link { margin-bottom: 0; }
 
 .doc-header h1 {
   display: flex;

@@ -87,10 +87,44 @@ document.getElementById('copy-email').addEventListener('click', copyEmail);
   updateActiveLink();
 })();
 
+// ---------- thousands-formatted number fields ----------
+// These fields are plain text inputs (not type="number") so they can show
+// "8,500,000" while typing. Only digits are ever accepted — negative signs
+// and everything else are stripped, which also makes it impossible to type
+// a value these fields shouldn't have (they're all non-negative counts or
+// currency amounts). num() strips the commas back out when reading values.
+
+function formatThousands(digitsOnly) {
+  return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function setThousandsValue(input, rawValue) {
+  input.value = rawValue === null || rawValue === undefined || rawValue === ''
+    ? ''
+    : formatThousands(String(rawValue).replace(/[^\d]/g, ''));
+}
+
+document.querySelectorAll('input[data-thousands]').forEach((input) => {
+  input.addEventListener('input', () => {
+    const digitsBeforeCursor = input.value.slice(0, input.selectionStart).replace(/[^\d]/g, '').length;
+    const digits = input.value.replace(/[^\d]/g, '');
+    input.value = formatThousands(digits);
+    // walk forward from the start until we've passed the same number of
+    // digits the cursor was after, so it lands in the same logical spot
+    // even though comma insertion shifted the character offsets
+    let seen = 0, pos = 0;
+    while (pos < input.value.length && seen < digitsBeforeCursor) {
+      if (/\d/.test(input.value[pos])) seen++;
+      pos++;
+    }
+    input.setSelectionRange(pos, pos);
+  });
+});
+
 // ---------- helpers ----------
 
 function num(id) {
-  const v = document.getElementById(id).value;
+  const v = document.getElementById(id).value.replace(/,/g, '');
   return v === '' ? null : parseFloat(v);
 }
 
@@ -379,84 +413,94 @@ function sizeBand(share) {
 
 // ---------- diagnostic bullets ----------
 
+// Bullets are tagged with a severity so the most urgent findings always
+// read first, regardless of which form field they came from. Same
+// vocabulary as the score badges (critical > serious > warning > neutral >
+// good), sorted with a stable sort so bullets within the same tier keep
+// their original (field) order.
+const SEVERITY_RANK = { critical: 0, serious: 1, warning: 2, neutral: 3, good: 4 };
+
 function buildDiagnostic(i, m) {
   const T = CONFIG.diagnosticThresholds;
   const b = [];
+  const push = (severity, text) => b.push({ severity, text });
 
   if (i.agreementsMismatch) {
-    b.push("Agreements figures don't add up: Renewed + Partial + Not Renewed ≠ Total — double-check these numbers.");
+    push('critical', "Agreements figures don't add up: Renewed + Partial + Not Renewed ≠ Total — double-check these numbers.");
   }
 
   if (i.renewalRate !== null) {
-    if (i.renewalRate < T.renewalRate.critical) b.push(`Critical renewal rate (${fmt(i.renewalRate,1)}%) in ${i.quarter} — high risk of revenue loss.`);
-    else if (i.renewalRate < T.renewalRate.belowTarget) b.push(`Renewal rate below target (${fmt(i.renewalRate,1)}%) in ${i.quarter}.`);
-    else if (i.renewalRate >= T.renewalRate.excellent) b.push(`Excellent renewal rate (${fmt(i.renewalRate,1)}%) in ${i.quarter}.`);
+    if (i.renewalRate < T.renewalRate.critical) push('critical', `Critical renewal rate (${fmt(i.renewalRate,1)}%) in ${i.quarter} — high risk of revenue loss.`);
+    else if (i.renewalRate < T.renewalRate.belowTarget) push('warning', `Renewal rate below target (${fmt(i.renewalRate,1)}%) in ${i.quarter}.`);
+    else if (i.renewalRate >= T.renewalRate.excellent) push('good', `Excellent renewal rate (${fmt(i.renewalRate,1)}%) in ${i.quarter}.`);
   }
   if (m.notRenewedRatio !== null && m.notRenewedRatio > T.notRenewedRatio) {
-    b.push(`${(m.notRenewedRatio*100).toFixed(0)}% of agreements did not renew in ${i.quarter}.`);
+    push('serious', `${(m.notRenewedRatio*100).toFixed(0)}% of agreements did not renew in ${i.quarter}.`);
   }
   if (m.partialRatio !== null && m.partialRatio > T.partialRatio) {
-    b.push(`Significant share of partial renewals (${(m.partialRatio*100).toFixed(0)}%) — possible seat downgrades.`);
+    push('warning', `Significant share of partial renewals (${(m.partialRatio*100).toFixed(0)}%) — possible seat downgrades.`);
   }
   if (i.clmStatus === 'inactive') {
-    b.push('CLM not active — reseller is outside the lifecycle management program, higher risk of silent churn.');
+    push('warning', 'CLM not active — reseller is outside the lifecycle management program, higher risk of silent churn.');
   } else if (i.clmStatus === 'active') {
-    b.push('CLM active — reseller benefits from structured account monitoring.');
+    push('good', 'CLM active — reseller benefits from structured account monitoring.');
   }
   if (m.valueRangeRisk === 'systemic') {
-    b.push('Renewal weakness is broad-based across both low- and high-value accounts, not isolated to one segment.');
+    push('critical', 'Renewal weakness is broad-based across both low- and high-value accounts, not isolated to one segment.');
   } else if (m.valueRangeRisk === 'high') {
-    b.push('Renewal losses are concentrated in high-value accounts ($10k+) — disproportionate revenue impact.');
+    push('serious', 'Renewal losses are concentrated in high-value accounts ($10k+) — disproportionate revenue impact.');
   } else if (m.valueRangeRisk === 'low') {
-    b.push('Renewal losses are concentrated in low-value accounts — limited revenue impact but worth monitoring.');
+    push('warning', 'Renewal losses are concentrated in low-value accounts — limited revenue impact but worth monitoring.');
   }
 
   if (i.arrGrowth !== null) {
-    if (i.arrGrowth < T.arrGrowth.declineBelow) b.push(`ARR declining (${fmt(i.arrGrowth,1)}%) in ${i.quarter}.`);
-    else if (i.arrGrowth > T.arrGrowth.strongAbove) b.push(`Strong ARR growth (${fmt(i.arrGrowth,1)}%) in ${i.quarter}.`);
+    if (i.arrGrowth < T.arrGrowth.declineBelow) push('serious', `ARR declining (${fmt(i.arrGrowth,1)}%) in ${i.quarter}.`);
+    else if (i.arrGrowth > T.arrGrowth.strongAbove) push('good', `Strong ARR growth (${fmt(i.arrGrowth,1)}%) in ${i.quarter}.`);
   }
   if (m.salesGrowthPct !== null) {
-    if (m.salesGrowthPct < T.salesGrowth.declineBelow) b.push(`Trailing 12-month sales down (${fmt(m.salesGrowthPct,1)}%) vs. the prior period.`);
-    else if (m.salesGrowthPct > T.salesGrowth.robustAbove) b.push(`Robust trailing 12-month sales growth (+${fmt(m.salesGrowthPct,1)}%).`);
+    if (m.salesGrowthPct < T.salesGrowth.declineBelow) push('serious', `Trailing 12-month sales down (${fmt(m.salesGrowthPct,1)}%) vs. the prior period.`);
+    else if (m.salesGrowthPct > T.salesGrowth.robustAbove) push('good', `Robust trailing 12-month sales growth (+${fmt(m.salesGrowthPct,1)}%).`);
   }
   if (m.paceRatio !== null) {
-    if (m.paceRatio < T.paceRatio.belowAverage) b.push('Current month is pacing below the monthly average.');
-    else if (m.paceRatio > T.paceRatio.aboveAverage) b.push('Current month is pacing above the monthly average.');
+    if (m.paceRatio < T.paceRatio.belowAverage) push('warning', 'Current month is pacing below the monthly average.');
+    else if (m.paceRatio > T.paceRatio.aboveAverage) push('good', 'Current month is pacing above the monthly average.');
   }
   if (i.nsbDelta !== null) {
-    if (i.nsbDelta < T.nsbDelta.declineBelow) b.push(`NSB down (${fmt(i.nsbDelta,1)}%) over the trailing 12 months.`);
-    else if (i.nsbDelta > T.nsbDelta.strongAbove) b.push(`NSB expanding strongly (+${fmt(i.nsbDelta,1)}%) over the trailing 12 months.`);
+    if (i.nsbDelta < T.nsbDelta.declineBelow) push('warning', `NSB down (${fmt(i.nsbDelta,1)}%) over the trailing 12 months.`);
+    else if (i.nsbDelta > T.nsbDelta.strongAbove) push('good', `NSB expanding strongly (+${fmt(i.nsbDelta,1)}%) over the trailing 12 months.`);
   }
   if (i.licensesDelta !== null) {
-    if (i.licensesDelta < T.licensesDelta.declineBelow) b.push(`License base shrinking (${fmt(i.licensesDelta,1)}%).`);
-    else if (i.licensesDelta > T.licensesDelta.expandingAbove) b.push(`License base expanding (+${fmt(i.licensesDelta,1)}%).`);
+    if (i.licensesDelta < T.licensesDelta.declineBelow) push('warning', `License base shrinking (${fmt(i.licensesDelta,1)}%).`);
+    else if (i.licensesDelta > T.licensesDelta.expandingAbove) push('good', `License base expanding (+${fmt(i.licensesDelta,1)}%).`);
   }
   if (i.endUsersDelta !== null) {
-    if (i.endUsersDelta < T.endUsersDelta.declineBelow) b.push('End-user count is declining.');
-    else if (i.endUsersDelta > T.endUsersDelta.healthyAbove) b.push('Healthy growth in end-user count.');
+    if (i.endUsersDelta < T.endUsersDelta.declineBelow) push('warning', 'End-user count is declining.');
+    else if (i.endUsersDelta > T.endUsersDelta.healthyAbove) push('good', 'Healthy growth in end-user count.');
   }
 
   if (m.sizeShare !== null) {
     const sb = sizeBand(m.sizeShare);
-    b.push(`"${sb.label}"-sized reseller — represents ${fmt(m.sizeShare,1)}% of the in-country business.`);
+    push('neutral', `"${sb.label}"-sized reseller — represents ${fmt(m.sizeShare,1)}% of the in-country business.`);
   }
 
   if (m.arPct !== null && m.arBenchmark !== null) {
     const gap = m.arPct - m.arBenchmark;
-    if (gap < T.autoRenewGap.wellBelow) b.push(`Auto-renew well below the reference (${fmt(m.arPct,1)}% vs ${fmt(m.arBenchmark,1)}%) — operational risk of passive churn.`);
-    else if (gap > T.autoRenewGap.above) b.push(`Auto-renew above the reference (${fmt(m.arPct,1)}% vs ${fmt(m.arBenchmark,1)}%) — good protection against passive churn.`);
+    if (gap < T.autoRenewGap.wellBelow) push('serious', `Auto-renew well below the reference (${fmt(m.arPct,1)}% vs ${fmt(m.arBenchmark,1)}%) — operational risk of passive churn.`);
+    else if (gap > T.autoRenewGap.above) push('good', `Auto-renew above the reference (${fmt(m.arPct,1)}% vs ${fmt(m.arBenchmark,1)}%) — good protection against passive churn.`);
   }
 
   const uv = m.upsellByPath;
-  if (uv.studio.count) b.push(`${uv.studio.count} ${uv.studio.unit} eligible for Acrobat Standard/Pro → Studio upgrade.`);
-  if (uv.proplus.count) b.push(`${uv.proplus.count} ${uv.proplus.unit} eligible for Creative Cloud Pro → Pro Plus upgrade.`);
-  if (uv.ent4.count) b.push(`${uv.ent4.count} ${uv.ent4.unit} eligible for Creative Cloud Pro Plus → Enterprise Edition 4 upgrade.`);
+  if (uv.studio.count) push('neutral', `${uv.studio.count} ${uv.studio.unit} eligible for Acrobat Standard/Pro → Studio upgrade.`);
+  if (uv.proplus.count) push('neutral', `${uv.proplus.count} ${uv.proplus.unit} eligible for Creative Cloud Pro → Pro Plus upgrade.`);
+  if (uv.ent4.count) push('neutral', `${uv.ent4.count} ${uv.ent4.unit} eligible for Creative Cloud Pro Plus → Enterprise Edition 4 upgrade.`);
   if (m.upsellRatio !== null && m.upsellRatio > T.upsellRatio.highPotentialAbove) {
-    b.push(`High upsell potential: ${fmt(m.upsellRatio,0)}% of the license base has an identified upgrade path.`);
+    push('neutral', `High upsell potential: ${fmt(m.upsellRatio,0)}% of the license base has an identified upgrade path.`);
   }
 
-  if (b.length === 0) b.push('Not enough data to generate a diagnosis — fill in more fields.');
-  return b;
+  if (b.length === 0) push('neutral', 'Not enough data to generate a diagnosis — fill in more fields.');
+  return b
+    .sort((a, c) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[c.severity])
+    .map(x => x.text);
 }
 
 // ---------- next action (data-driven rule table, first match wins) ----------
@@ -971,7 +1015,9 @@ function fillSample() {
   }
   for (const [key, value] of Object.entries(persona.data)) {
     const el = document.getElementById(key);
-    if (el) el.value = value;
+    if (!el) continue;
+    if (el.hasAttribute('data-thousands')) setThousandsValue(el, value);
+    else el.value = value;
   }
 
   resultsBody.hidden = true;
