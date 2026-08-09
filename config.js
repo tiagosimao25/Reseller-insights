@@ -62,42 +62,52 @@ const CONFIG = {
   // can't drift from the actual logic in script.js's buildNextAction.
   nextActionRules: [
     {
+      id: 'escalateLarge',
       when: { renewalHealth: 'Critical', size: ['Large', 'Strategic'] },
       action: 'Urgent action: escalate to a senior account manager and schedule a retention call this week — a large reseller is at critical risk.',
     },
     {
+      id: 'retentionImmediate',
       when: { renewalHealth: 'Critical' },
       action: 'Contact immediately for a retention plan; confirm the reason for non-renewal with the reseller.',
     },
     {
+      id: 'dualOpportunity',
       when: { renewalHealth: 'High', upsell: 'High' },
       action: 'Dual opportunity: address the renewal risk and pitch the upgrade in the same relationship meeting with the reseller.',
     },
     {
+      id: 'accountReview',
       when: { renewalHealth: 'High' },
       action: 'Schedule an account review to understand the causes of the renewal drop before the next cycle.',
     },
     {
+      id: 'upsellStrongGrowth',
       when: { growth: 'Strong growth', upsell: 'High' },
       action: 'Ideal moment for an upsell pitch — schedule a demo of the higher-tier product while growth is strong.',
     },
     {
+      id: 'upsellProposal',
       when: { upsell: 'High' },
       action: 'Prepare a commercial upgrade proposal and send a dedicated business case to the reseller.',
     },
     {
+      id: 'autoRenewPromote',
       when: { autoRenew: 'Below average' },
       action: 'Promote auto-renew activation with the reseller to reduce future passive-churn risk.',
     },
     {
+      id: 'investigateGrowthSlowdown',
       when: { growth: 'Decline', renewalHealth: ['Low', 'Medium'] },
       action: 'Investigate the causes of the growth slowdown despite a healthy renewal rate.',
     },
     {
+      id: 'emergingInvestment',
       when: { size: 'Small', growth: 'Strong growth' },
       action: 'Emerging reseller with strong growth — consider additional investment in the partnership.',
     },
     {
+      id: 'regularMonitoring',
       when: {},
       action: 'Keep up regular monitoring; no urgent action identified at this time.',
     },

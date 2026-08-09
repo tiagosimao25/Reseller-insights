@@ -50,7 +50,8 @@ form.addEventListener('submit', (e) => {
 });
 
 document.getElementById('fill-sample').addEventListener('click', fillSample);
-document.getElementById('copy-email').addEventListener('click', copyEmail);
+document.getElementById('copy-email-en').addEventListener('click', (e) => copyEmail('email-draft-en', e.currentTarget));
+document.getElementById('copy-email-translated').addEventListener('click', (e) => copyEmail('email-draft-translated', e.currentTarget));
 
 // ---------- section nav (jump-to bar, purely navigational — no scoring impact) ----------
 
@@ -133,6 +134,14 @@ function val(id) {
   return v === '' ? null : v;
 }
 
+// reads the data-lang attribute off the selected <option>, defaulting to
+// English when nothing is selected (or the country has no localized draft)
+function countryLang(id) {
+  const el = document.getElementById(id);
+  const opt = el.selectedOptions[0];
+  return (opt && opt.dataset.lang) || 'en';
+}
+
 function clamp(v, min = 0, max = 100) {
   return Math.max(min, Math.min(max, v));
 }
@@ -191,6 +200,8 @@ function readInputs() {
   return {
     resellerName: val('resellerName'),
     contactName: val('contactName'),
+    country: val('resellerCountry'),
+    countryLang: countryLang('resellerCountry'),
     quarter: val('quarter') || 'this quarter',
     renewalRate: num('renewalRate'),
     agreementsTotal: num('agreementsTotal'),
@@ -515,7 +526,172 @@ function ruleMatches(when, bandLabels) {
   });
 }
 
-function buildNextAction(i, m) {
+const LANG_NAMES = { en: 'English', pt: 'Portuguese', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian', nl: 'Dutch', pl: 'Polish' };
+
+function tr(dict, lang, label) {
+  return (dict[lang] && dict[lang][label]) || label.toLowerCase();
+}
+
+const RISK_LABEL = {
+  en: { Low: 'low', Medium: 'medium', High: 'high', Critical: 'critical' },
+  pt: { Low: 'baixo', Medium: 'médio', High: 'alto', Critical: 'crítico' },
+  es: { Low: 'bajo', Medium: 'medio', High: 'alto', Critical: 'crítico' },
+  fr: { Low: 'faible', Medium: 'moyen', High: 'élevé', Critical: 'critique' },
+  de: { Low: 'niedrig', Medium: 'mittel', High: 'hoch', Critical: 'kritisch' },
+  it: { Low: 'basso', Medium: 'medio', High: 'alto', Critical: 'critico' },
+  nl: { Low: 'laag', Medium: 'gemiddeld', High: 'hoog', Critical: 'kritiek' },
+  pl: { Low: 'niskie', Medium: 'średnie', High: 'wysokie', Critical: 'krytyczne' },
+};
+
+const OPPORTUNITY_LABEL = {
+  en: { Low: 'low', Medium: 'medium', High: 'high', None: 'none' },
+  pt: { Low: 'baixa', Medium: 'média', High: 'alta', None: 'nenhuma' },
+  es: { Low: 'baja', Medium: 'media', High: 'alta', None: 'ninguna' },
+  fr: { Low: 'faible', Medium: 'moyenne', High: 'élevée', None: 'aucune' },
+  de: { Low: 'niedrig', Medium: 'mittel', High: 'hoch', None: 'keine' },
+  it: { Low: 'bassa', Medium: 'media', High: 'alta', None: 'nessuna' },
+  nl: { Low: 'laag', Medium: 'gemiddeld', High: 'hoog', None: 'geen' },
+  pl: { Low: 'niska', Medium: 'średnia', High: 'wysoka', None: 'brak' },
+};
+
+const PRIORITY_LABEL = {
+  en: { Low: 'low', Medium: 'medium', High: 'high', 'Very High': 'very high' },
+  pt: { Low: 'baixa', Medium: 'média', High: 'alta', 'Very High': 'muito alta' },
+  es: { Low: 'baja', Medium: 'media', High: 'alta', 'Very High': 'muy alta' },
+  fr: { Low: 'faible', Medium: 'moyenne', High: 'élevée', 'Very High': 'très élevée' },
+  de: { Low: 'niedrig', Medium: 'mittel', High: 'hoch', 'Very High': 'sehr hoch' },
+  it: { Low: 'bassa', Medium: 'media', High: 'alta', 'Very High': 'molto alta' },
+  nl: { Low: 'laag', Medium: 'gemiddeld', High: 'hoog', 'Very High': 'zeer hoog' },
+  pl: { Low: 'niski', Medium: 'średni', High: 'wysoki', 'Very High': 'bardzo wysoki' },
+};
+
+const GROWTH_LABEL = {
+  en: { 'Strong growth': 'strong growth', Growth: 'growth', Stable: 'stable', Decline: 'declining' },
+  pt: { 'Strong growth': 'crescimento forte', Growth: 'crescimento', Stable: 'estável', Decline: 'em declínio' },
+  es: { 'Strong growth': 'crecimiento fuerte', Growth: 'crecimiento', Stable: 'estable', Decline: 'en declive' },
+  fr: { 'Strong growth': 'forte croissance', Growth: 'croissance', Stable: 'stable', Decline: 'en déclin' },
+  de: { 'Strong growth': 'starkes Wachstum', Growth: 'Wachstum', Stable: 'stabil', Decline: 'rückläufig' },
+  it: { 'Strong growth': 'crescita forte', Growth: 'crescita', Stable: 'stabile', Decline: 'in calo' },
+  nl: { 'Strong growth': 'sterke groei', Growth: 'groei', Stable: 'stabiel', Decline: 'dalend' },
+  pl: { 'Strong growth': 'silny wzrost', Growth: 'wzrost', Stable: 'stabilny', Decline: 'spadek' },
+};
+
+const AUTORENEW_LABEL = {
+  en: { 'Above average': 'above average', 'At average': 'at average', 'Below average': 'below average' },
+  pt: { 'Above average': 'acima da média', 'At average': 'na média', 'Below average': 'abaixo da média' },
+  es: { 'Above average': 'por encima de la media', 'At average': 'en la media', 'Below average': 'por debajo de la media' },
+  fr: { 'Above average': 'au-dessus de la moyenne', 'At average': 'dans la moyenne', 'Below average': 'en dessous de la moyenne' },
+  de: { 'Above average': 'über dem Durchschnitt', 'At average': 'im Durchschnitt', 'Below average': 'unter dem Durchschnitt' },
+  it: { 'Above average': 'sopra la media', 'At average': 'nella media', 'Below average': 'sotto la media' },
+  nl: { 'Above average': 'boven gemiddeld', 'At average': 'gemiddeld', 'Below average': 'onder gemiddeld' },
+  pl: { 'Above average': 'powyżej średniej', 'At average': 'na poziomie średnim', 'Below average': 'poniżej średniej' },
+};
+
+const UNIT_LABEL = {
+  en: { licenses: 'licenses', agreements: 'agreements' },
+  pt: { licenses: 'licenças', agreements: 'acordos' },
+  es: { licenses: 'licencias', agreements: 'acuerdos' },
+  fr: { licenses: 'licences', agreements: 'accords' },
+  de: { licenses: 'Lizenzen', agreements: 'Vereinbarungen' },
+  it: { licenses: 'licenze', agreements: 'accordi' },
+  nl: { licenses: 'licenties', agreements: 'overeenkomsten' },
+  pl: { licenses: 'licencje', agreements: 'umowy' },
+};
+
+const NEXT_ACTION_TRANSLATIONS = {
+  escalateLarge: {
+    pt: 'Ação urgente: escale para um gestor de conta sénior e agende uma chamada de retenção esta semana — um reseller de grande dimensão está em risco crítico.',
+    es: 'Acción urgente: escale el caso a un gestor de cuentas sénior y programe una llamada de retención esta semana — un reseller de gran tamaño está en riesgo crítico.',
+    fr: 'Action urgente : transmettez le dossier à un gestionnaire de compte senior et planifiez un appel de rétention cette semaine — un revendeur important est en risque critique.',
+    de: 'Dringende Maßnahme: An einen Senior Account Manager eskalieren und diese Woche einen Bindungs-Call vereinbaren — ein großer Reseller befindet sich in kritischem Risiko.',
+    it: 'Azione urgente: escalation a un account manager senior e pianificare una chiamata di retention questa settimana — un reseller di grandi dimensioni è a rischio critico.',
+    nl: 'Urgente actie: escaleer naar een senior accountmanager en plan deze week een retentiegesprek — een grote reseller loopt een kritiek risico.',
+    pl: 'Pilne działanie: eskaluj sprawę do starszego opiekuna klienta i zaplanuj w tym tygodniu rozmowę retencyjną — duży reseller jest w krytycznym stanie ryzyka.',
+  },
+  retentionImmediate: {
+    pt: 'Contacte de imediato para definir um plano de retenção; confirme com o reseller o motivo da não renovação.',
+    es: 'Contacte de inmediato para definir un plan de retención; confirme con el reseller el motivo de la no renovación.',
+    fr: 'Contactez immédiatement pour établir un plan de rétention ; confirmez avec le revendeur la raison du non-renouvellement.',
+    de: 'Sofort kontaktieren, um einen Bindungsplan zu erstellen; den Grund für die Nichtverlängerung mit dem Reseller klären.',
+    it: 'Contattare immediatamente per definire un piano di retention; confermare con il reseller il motivo del mancato rinnovo.',
+    nl: 'Neem onmiddellijk contact op voor een retentieplan; bevestig met de reseller de reden voor het niet verlengen.',
+    pl: 'Skontaktuj się natychmiast, aby ustalić plan retencji; potwierdź z resellerem powód braku odnowienia.',
+  },
+  dualOpportunity: {
+    pt: 'Oportunidade dupla: aborde o risco de renovação e apresente o upgrade na mesma reunião com o reseller.',
+    es: 'Oportunidad doble: aborde el riesgo de renovación y presente el upgrade en la misma reunión con el reseller.',
+    fr: 'Double opportunité : traitez le risque de renouvellement et présentez la mise à niveau lors de la même réunion avec le revendeur.',
+    de: 'Doppelte Gelegenheit: Das Verlängerungsrisiko ansprechen und das Upgrade im selben Gespräch mit dem Reseller vorstellen.',
+    it: "Doppia opportunità: affrontare il rischio di rinnovo e proporre l'upgrade nello stesso incontro con il reseller.",
+    nl: 'Dubbele kans: bespreek het verlengingsrisico en presenteer de upgrade tijdens hetzelfde gesprek met de reseller.',
+    pl: "Podwójna szansa: omów ryzyko odnowienia i przedstaw propozycję upgrade'u podczas tego samego spotkania z resellerem.",
+  },
+  accountReview: {
+    pt: 'Agende uma revisão de conta para perceber as causas da quebra na renovação antes do próximo ciclo.',
+    es: 'Programe una revisión de cuenta para entender las causas de la caída en la renovación antes del próximo ciclo.',
+    fr: 'Planifiez une revue de compte pour comprendre les causes de la baisse du renouvellement avant le prochain cycle.',
+    de: 'Ein Account-Review planen, um die Ursachen des Rückgangs bei der Verlängerung vor dem nächsten Zyklus zu verstehen.',
+    it: "Pianificare una revisione dell'account per comprendere le cause del calo dei rinnovi prima del prossimo ciclo.",
+    nl: 'Plan een accountreview om de oorzaken van de terugval in verlenging te begrijpen vóór de volgende cyclus.',
+    pl: 'Zaplanuj przegląd konta, aby zrozumieć przyczyny spadku odnowień przed kolejnym cyklem.',
+  },
+  upsellStrongGrowth: {
+    pt: 'Momento ideal para uma proposta de upsell — agende uma demonstração do produto de nível superior enquanto o crescimento está forte.',
+    es: 'Momento ideal para una propuesta de upsell — programe una demostración del producto de nivel superior mientras el crecimiento es fuerte.',
+    fr: 'Moment idéal pour une proposition de montée en gamme — planifiez une démonstration du produit supérieur pendant que la croissance est forte.',
+    de: 'Idealer Zeitpunkt für ein Upsell-Angebot — eine Demo des höherwertigen Produkts planen, solange das Wachstum stark ist.',
+    it: 'Momento ideale per una proposta di upsell — pianificare una demo del prodotto di livello superiore mentre la crescita è forte.',
+    nl: 'Ideaal moment voor een upsell-voorstel — plan een demo van het hogere productniveau terwijl de groei sterk is.',
+    pl: 'Idealny moment na propozycję upsellu — zaplanuj demonstrację produktu wyższego poziomu, dopóki wzrost jest silny.',
+  },
+  upsellProposal: {
+    pt: 'Prepare uma proposta comercial de upgrade e envie um business case dedicado ao reseller.',
+    es: 'Prepare una propuesta comercial de upgrade y envíe un business case dedicado al reseller.',
+    fr: 'Préparez une proposition commerciale de mise à niveau et envoyez un business case dédié au revendeur.',
+    de: 'Ein kommerzielles Upgrade-Angebot vorbereiten und einen eigenen Business Case an den Reseller senden.',
+    it: 'Preparare una proposta commerciale di upgrade e inviare un business case dedicato al reseller.',
+    nl: 'Stel een commercieel upgradevoorstel op en stuur een specifieke business case naar de reseller.',
+    pl: "Przygotuj komercyjną propozycję upgrade'u i wyślij dedykowany business case do resellera.",
+  },
+  autoRenewPromote: {
+    pt: 'Promova a ativação do auto-renew junto do reseller para reduzir o risco futuro de churn passivo.',
+    es: 'Promueva la activación del auto-renew con el reseller para reducir el riesgo futuro de churn pasivo.',
+    fr: "Encouragez l'activation du renouvellement automatique auprès du revendeur pour réduire le risque futur de churn passif.",
+    de: 'Die Aktivierung der automatischen Verlängerung beim Reseller fördern, um künftiges passives Abwanderungsrisiko zu verringern.',
+    it: "Promuovere l'attivazione del rinnovo automatico con il reseller per ridurre il rischio futuro di abbandono passivo.",
+    nl: 'Stimuleer de activering van automatisch verlengen bij de reseller om toekomstig passief verloop te verminderen.',
+    pl: 'Zachęć resellera do aktywacji automatycznego odnawiania, aby zmniejszyć przyszłe ryzyko biernej rezygnacji.',
+  },
+  investigateGrowthSlowdown: {
+    pt: 'Investigue as causas do abrandamento do crescimento apesar de uma taxa de renovação saudável.',
+    es: 'Investigue las causas de la desaceleración del crecimiento a pesar de una tasa de renovación saludable.',
+    fr: 'Étudiez les causes du ralentissement de la croissance malgré un taux de renouvellement sain.',
+    de: 'Die Ursachen der Wachstumsverlangsamung trotz gesunder Verlängerungsrate untersuchen.',
+    it: 'Indagare le cause del rallentamento della crescita nonostante un tasso di rinnovo sano.',
+    nl: 'Onderzoek de oorzaken van de groeivertraging ondanks een gezond verlengingspercentage.',
+    pl: 'Zbadaj przyczyny spowolnienia wzrostu mimo zdrowego wskaźnika odnowień.',
+  },
+  emergingInvestment: {
+    pt: 'Reseller emergente com crescimento forte — considere investimento adicional na parceria.',
+    es: 'Reseller emergente con crecimiento fuerte — considere una inversión adicional en la asociación.',
+    fr: 'Revendeur émergent avec une forte croissance — envisagez un investissement supplémentaire dans le partenariat.',
+    de: 'Aufstrebender Reseller mit starkem Wachstum — zusätzliche Investition in die Partnerschaft in Erwägung ziehen.',
+    it: 'Reseller emergente con forte crescita — valutare un investimento aggiuntivo nella partnership.',
+    nl: 'Opkomende reseller met sterke groei — overweeg extra investering in het partnerschap.',
+    pl: 'Rozwijający się reseller z silnym wzrostem — rozważ dodatkową inwestycję w partnerstwo.',
+  },
+  regularMonitoring: {
+    pt: 'Mantenha o acompanhamento regular; não foi identificada nenhuma ação urgente neste momento.',
+    es: 'Mantenga el seguimiento regular; no se ha identificado ninguna acción urgente en este momento.',
+    fr: 'Poursuivez le suivi régulier ; aucune action urgente identifiée pour le moment.',
+    de: 'Regelmäßige Beobachtung fortsetzen; derzeit keine dringende Maßnahme erforderlich.',
+    it: 'Mantenere il monitoraggio regolare; nessuna azione urgente identificata al momento.',
+    nl: 'Blijf regelmatig monitoren; op dit moment is geen dringende actie nodig.',
+    pl: 'Kontynuuj regularne monitorowanie; obecnie nie zidentyfikowano pilnych działań.',
+  },
+};
+
+function buildNextAction(i, m, lang) {
   const bandLabels = {
     renewalHealth: riskBand(m.renewalHealth).label,
     growth: growthBand(m.growthScore).label,
@@ -524,7 +700,9 @@ function buildNextAction(i, m) {
     autoRenew: autoRenewBand(m.autoRenewScore).label,
   };
   const rule = CONFIG.nextActionRules.find(r => ruleMatches(r.when, bandLabels));
-  return rule.action;
+  if (!lang || lang === 'en') return rule.action;
+  const translated = NEXT_ACTION_TRANSLATIONS[rule.id];
+  return (translated && translated[lang]) || rule.action;
 }
 
 // ---------- product recommendation ----------
@@ -537,7 +715,8 @@ function buildProductRecommendation(i, m) {
   return `Recommended focus: ${p.label} (${p.count} ${p.unit} eligible). This is the highest-volume upgrade path identified for this reseller.`;
 }
 
-// ---------- email drafts (3 pragmatic angles per diagnosis) ----------
+// ---------- email drafts (3 pragmatic angles per diagnosis, each with an
+// optional second draft translated into the reseller's country language) ----------
 
 function money(v) {
   return v === null ? null : '$' + Math.round(v).toLocaleString('en-US');
@@ -557,94 +736,555 @@ function emailContext(i, m) {
   const rBand = riskBand(m.renewalHealth);
   const gBand = growthBand(m.growthScore);
   const name = i.resellerName;
-  const contact = i.contactName || '[Contact Name]';
   const subjectName = name ? `${name} — ` : '';
-  const possessive = name ? name + (/s$/i.test(name) ? '’' : '’s') : null;
-  const numbersFor = possessive
-    ? `${possessive} ${i.quarter}`
-    : (i.quarter === 'this quarter' ? i.quarter : `the ${i.quarter}`);
   const renewalPct = i.renewalRate !== null ? fmt(i.renewalRate, 1) + '%' : null;
-  return { rBand, gBand, name, contact, subjectName, numbersFor, renewalPct };
+  return { rBand, gBand, name, subjectName, renewalPct };
 }
 
-function buildRetentionEmail(i, m, ctx) {
-  const { rBand, contact, subjectName, numbersFor, renewalPct } = ctx;
+// English's possessive/article construction, kept exactly as it was before
+// this file grew per-language templates — only EMAIL_PHRASES.en uses this.
+function numbersForEn(name, quarter) {
+  const possessive = name ? name + (/s$/i.test(name) ? '’' : '’s') : null;
+  return possessive ? `${possessive} ${quarter}` : (quarter === 'this quarter' ? quarter : `the ${quarter}`);
+}
+
+const EMAIL_PHRASES = {
+  en: {
+    contactPlaceholder: '[Contact Name]',
+    greeting: (contact) => `Hi ${contact},`,
+    signoff: 'Best regards,',
+    yourName: '[Your Name]',
+    accountFallback: 'the account',
+
+    retentionSubject: (quarter) => `Renewal check-in — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} renewed, ${notRenewed} not renewed out of ${total} agreements)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) =>
+      `${numbersForEn(name, quarter)} renewal rate is at ${pct}${detail}${bad ? ", which is below where we'd like it." : '.'}`,
+    valueRangeRiskPhrase: {
+      systemic: 'spread fairly evenly across value ranges, including your highest-value accounts',
+      high: 'concentrated in your high-value accounts ($10k+)',
+      low: 'concentrated in your smaller accounts (under $5k)',
+    },
+    valueRangeSentence: (text) => `The renewal losses look ${text} — worth a closer look at what's driving that segment.`,
+    clmInactiveSentence: "I also noticed CLM tracking isn't active on the account yet — turning it on would give both of us better visibility into upcoming renewal dates and reduce last-minute surprises.",
+    autoRenewSentence: (pct, bench) => `Auto-renew is running at ${pct}% versus a ${bench}% benchmark — enabling it on more agreements would take passive churn off the table for future quarters.`,
+    retentionProposal: (nextAction) => `Here's what I'd propose: a 20-minute call this week to walk through the accounts at risk, confirm the reasons behind any non-renewals, and agree on a concrete save plan before next quarter's cycle starts. ${nextAction}`,
+    retentionClosing: 'What does your calendar look like Wednesday or Thursday?',
+
+    growthSubject: (quarter) => `Growth opportunity — ${quarter}`,
+    growthBitArr: (x) => `ARR up ${x}%`,
+    growthBitSales: (x) => `sales up ${x}% year-over-year`,
+    growthBitLicenses: (x) => `licenses up ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => `${numbersForEn(name, quarter)} numbers show real momentum${detail} — congratulations, that's a strong quarter.`,
+    growthWeakSentence: (name, quarter, detail) => `${numbersForEn(name, quarter)} numbers${detail} are where I wanted to start this conversation.`,
+    upsellFoundSentence1: (count, unit, label) => `While reviewing the account I found a concrete upgrade opportunity: ${count} ${unit} eligible for ${label}.`,
+    upsellFoundSentence2: "At current volumes, that's a meaningful expansion opportunity for both sides — happy to put together numbers so you can see the exact impact on your book.",
+    upsellNotFoundSentence: "I didn't see upsell-eligible volume flagged on the account yet — worth a quick audit together to confirm, since accounts with this growth profile usually have upgrade headroom somewhere in the license mix.",
+    growthNextStep: (nextAction) => `Next step on my side: ${nextAction}`,
+    growthClosing: 'Could we grab 30 minutes for a working session on this — happy to bring a draft proposal?',
+
+    qbrSubject: (quarter) => `${quarter} business review`,
+    qbrIntro: (name, quarter) => `Ahead of our quarterly check-in, here's a quick summary of where ${name} stands based on ${quarter}'s numbers:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Renewal rate: ${pct}% (${riskLabel} risk)`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Sales, trailing 12m: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (vs. ${prior} prior period)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Growth: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (sales ${pct}% YoY)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Auto-renew: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Upgrade opportunity: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} eligible for ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Account size: ${pct}% of the in-country business`,
+    qbrOverall: (priorityLabel, nextAction) => `Overall I'd flag this account as ${priorityLabel} priority this quarter. ${nextAction}`,
+    qbrClosing: "Let me know a time that works for a 30-minute review — I'll bring the full breakdown.",
+  },
+  pt: {
+    contactPlaceholder: '[Nome do Contacto]',
+    greeting: (contact) => `Olá ${contact},`,
+    signoff: 'Cumprimentos,',
+    yourName: '[O seu nome]',
+    accountFallback: 'a conta',
+
+    retentionSubject: (quarter) => `Ponto de situação sobre renovação — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} renovados, ${notRenewed} não renovados de um total de ${total} acordos)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `A taxa de renovação da ${name}` : 'A taxa de renovação';
+      return `${subj} no ${quarter} está em ${pct}${detail}${bad ? ', o que está abaixo do que gostaríamos.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'distribuídas de forma relativamente uniforme pelos vários escalões de valor, incluindo as contas de maior valor',
+      high: 'concentradas nas contas de maior valor (10 mil dólares ou mais)',
+      low: 'concentradas nas contas de menor valor (abaixo de 5 mil dólares)',
+    },
+    valueRangeSentence: (text) => `As perdas de renovação parecem estar ${text} — vale a pena perceber melhor o que está a causar isto neste segmento.`,
+    clmInactiveSentence: 'Também reparei que o acompanhamento por CLM ainda não está ativo nesta conta — ativá-lo dar-nos-ia mais visibilidade sobre as próximas datas de renovação e reduziria surpresas de última hora.',
+    autoRenewSentence: (pct, bench) => `O auto-renew está atualmente em ${pct}%, face a um benchmark de ${bench}% — ativá-lo em mais acordos eliminaria o risco de churn passivo nos próximos trimestres.`,
+    retentionProposal: (nextAction) => `Proponho o seguinte: uma chamada de 20 minutos esta semana para rever as contas em risco, confirmar os motivos de eventuais não renovações e definir um plano de retenção concreto antes do início do próximo ciclo. ${nextAction}`,
+    retentionClosing: 'Como está a sua agenda na quarta ou quinta-feira?',
+
+    growthSubject: (quarter) => `Oportunidade de crescimento — ${quarter}`,
+    growthBitArr: (x) => `ARR a subir ${x}%`,
+    growthBitSales: (x) => `vendas a subir ${x}% face ao ano anterior`,
+    growthBitLicenses: (x) => `licenças a subir ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Os números da ${name}` : 'Os números';
+      return `${subj} no ${quarter} mostram um momentum real${detail} — parabéns, foi um trimestre forte.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Os números da ${name}` : 'Os números';
+      return `${subj} no ${quarter}${detail} foram o ponto de partida desta conversa.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Ao rever a conta, identifiquei uma oportunidade concreta de upgrade: ${count} ${unit} elegíveis para ${label}.`,
+    upsellFoundSentence2: 'Aos volumes atuais, esta é uma oportunidade de expansão significativa para ambas as partes — com todo o gosto preparo os números para mostrar o impacto exato na sua carteira.',
+    upsellNotFoundSentence: 'Não identifiquei volume elegível para upsell registado na conta até ao momento — vale a pena fazermos uma auditoria rápida em conjunto, já que contas com este perfil de crescimento costumam ter margem de upgrade algures no mix de licenças.',
+    growthNextStep: (nextAction) => `Próximo passo da minha parte: ${nextAction}`,
+    growthClosing: 'Podemos reservar 30 minutos para uma sessão de trabalho sobre isto — com todo o gosto trago uma proposta preliminar?',
+
+    qbrSubject: (quarter) => `Revisão de negócio — ${quarter}`,
+    qbrIntro: (name, quarter) => `Antes do nosso ponto de situação trimestral, aqui fica um resumo rápido de como está a ${name} com base nos números do ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Taxa de renovação: ${pct}% (risco ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Vendas, últimos 12 meses: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (vs. ${prior} no período anterior)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Crescimento: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (vendas ${pct}% face ao ano anterior)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Auto-renew: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Oportunidade de upgrade: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} elegíveis para ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Dimensão da conta: ${pct}% do negócio no país`,
+    qbrOverall: (priorityLabel, nextAction) => `No geral, classificaria esta conta como prioridade ${priorityLabel} este trimestre. ${nextAction}`,
+    qbrClosing: 'Diga-me um horário que lhe seja conveniente para uma revisão de 30 minutos — levo a análise completa.',
+  },
+  es: {
+    contactPlaceholder: '[Nombre de Contacto]',
+    greeting: (contact) => `Hola ${contact},`,
+    signoff: 'Saludos cordiales,',
+    yourName: '[Su nombre]',
+    accountFallback: 'la cuenta',
+
+    retentionSubject: (quarter) => `Seguimiento de renovación — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} renovados, ${notRenewed} no renovados de un total de ${total} acuerdos)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `La tasa de renovación de ${name}` : 'La tasa de renovación';
+      return `${subj} en ${quarter} está en ${pct}${detail}${bad ? ', lo cual está por debajo de lo deseado.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'distribuidas de forma bastante uniforme entre los distintos rangos de valor, incluidas sus cuentas de mayor valor',
+      high: 'concentradas en sus cuentas de mayor valor (10.000 USD o más)',
+      low: 'concentradas en sus cuentas de menor valor (menos de 5.000 USD)',
+    },
+    valueRangeSentence: (text) => `Las pérdidas de renovación parecen estar ${text} — vale la pena analizar más de cerca qué está impulsando esto en ese segmento.`,
+    clmInactiveSentence: 'También noté que el seguimiento CLM no está activo todavía en la cuenta — activarlo nos daría a ambos mejor visibilidad sobre las próximas fechas de renovación y reduciría sorpresas de última hora.',
+    autoRenewSentence: (pct, bench) => `El auto-renew está actualmente en ${pct}%, frente a un benchmark del ${bench}% — activarlo en más acuerdos eliminaría el riesgo de abandono pasivo en los próximos trimestres.`,
+    retentionProposal: (nextAction) => `Esto es lo que propongo: una llamada de 20 minutos esta semana para revisar las cuentas en riesgo, confirmar los motivos de cualquier no renovación y acordar un plan de retención concreto antes de que empiece el próximo ciclo. ${nextAction}`,
+    retentionClosing: '¿Cómo tiene su agenda el miércoles o el jueves?',
+
+    growthSubject: (quarter) => `Oportunidad de crecimiento — ${quarter}`,
+    growthBitArr: (x) => `ARR con un incremento del ${x}%`,
+    growthBitSales: (x) => `ventas con un incremento interanual del ${x}%`,
+    growthBitLicenses: (x) => `licencias con un incremento del ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Los números de ${name}` : 'Los números';
+      return `${subj} en ${quarter} muestran un impulso real${detail} — felicidades, ha sido un trimestre sólido.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Los números de ${name}` : 'Los números';
+      return `${subj} en ${quarter}${detail} son el punto de partida de esta conversación.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Al revisar la cuenta encontré una oportunidad concreta de upgrade: ${count} ${unit} elegibles para ${label}.`,
+    upsellFoundSentence2: 'A los volúmenes actuales, esta es una oportunidad de expansión significativa para ambas partes — con gusto preparo las cifras para que vea el impacto exacto en su cartera.',
+    upsellNotFoundSentence: 'No vi volumen elegible para upsell registrado en la cuenta todavía — vale la pena hacer una auditoría rápida juntos, ya que las cuentas con este perfil de crecimiento suelen tener margen de upgrade en algún punto del mix de licencias.',
+    growthNextStep: (nextAction) => `Siguiente paso de mi parte: ${nextAction}`,
+    growthClosing: '¿Podemos reservar 30 minutos para una sesión de trabajo sobre esto — con gusto traigo una propuesta preliminar?',
+
+    qbrSubject: (quarter) => `Revisión de negocio — ${quarter}`,
+    qbrIntro: (name, quarter) => `Antes de nuestra reunión trimestral, aquí tiene un resumen rápido de cómo está ${name} según los números de ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Tasa de renovación: ${pct}% (riesgo ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Ventas, últimos 12 meses: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (frente a ${prior} en el período anterior)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Crecimiento: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (ventas +${pct}% interanual)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Auto-renew: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Oportunidad de upgrade: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} elegibles para ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Tamaño de la cuenta: ${pct}% del negocio en el país`,
+    qbrOverall: (priorityLabel, nextAction) => `En general, calificaría esta cuenta como prioridad ${priorityLabel} este trimestre. ${nextAction}`,
+    qbrClosing: 'Avíseme qué horario le conviene para una revisión de 30 minutos — llevaré el desglose completo.',
+  },
+  fr: {
+    contactPlaceholder: '[Nom du Contact]',
+    greeting: (contact) => `Bonjour ${contact},`,
+    signoff: 'Cordialement,',
+    yourName: '[Votre nom]',
+    accountFallback: 'le compte',
+
+    retentionSubject: (quarter) => `Point sur le renouvellement — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} renouvelés, ${notRenewed} non renouvelés sur un total de ${total} contrats)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Le taux de renouvellement de ${name}` : 'Le taux de renouvellement';
+      return `${subj} pour ${quarter} est de ${pct}${detail}${bad ? ', ce qui est en dessous de ce que nous souhaiterions.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'réparties de façon assez homogène entre les différentes tranches de valeur, y compris vos comptes à plus forte valeur',
+      high: 'concentrées sur vos comptes à forte valeur (10 000 $ ou plus)',
+      low: 'concentrées sur vos comptes de plus petite valeur (moins de 5 000 $)',
+    },
+    valueRangeSentence: (text) => `Les pertes de renouvellement semblent ${text} — cela mérite qu'on regarde de plus près ce qui se passe sur ce segment.`,
+    clmInactiveSentence: "J'ai également remarqué que le suivi CLM n'est pas encore activé sur ce compte — l'activer nous donnerait à tous les deux une meilleure visibilité sur les prochaines échéances de renouvellement et réduirait les surprises de dernière minute.",
+    autoRenewSentence: (pct, bench) => `Le renouvellement automatique est actuellement à ${pct}%, contre un benchmark de ${bench}% — l'activer sur davantage de contrats permettrait d'éliminer le risque de churn passif pour les prochains trimestres.`,
+    retentionProposal: (nextAction) => `Voici ce que je propose : un appel de 20 minutes cette semaine pour passer en revue les comptes à risque, confirmer les raisons des éventuels non-renouvellements et convenir d'un plan de rétention concret avant le début du prochain cycle. ${nextAction}`,
+    retentionClosing: 'Quelles sont vos disponibilités mercredi ou jeudi ?',
+
+    growthSubject: (quarter) => `Opportunité de croissance — ${quarter}`,
+    growthBitArr: (x) => `ARR en hausse de ${x}%`,
+    growthBitSales: (x) => `ventes en hausse de ${x}% sur un an`,
+    growthBitLicenses: (x) => `licences en hausse de ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Les chiffres de ${name}` : 'Les chiffres';
+      return `${subj} pour ${quarter} montrent une vraie dynamique${detail} — félicitations, c'est un trimestre solide.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Les chiffres de ${name}` : 'Les chiffres';
+      return `${subj} pour ${quarter}${detail} sont le point de départ de cette conversation.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `En examinant le compte, j'ai identifié une opportunité de montée en gamme concrète : ${count} ${unit} éligibles pour ${label}.`,
+    upsellFoundSentence2: "Aux volumes actuels, c'est une opportunité d'expansion significative pour les deux parties — je peux volontiers préparer les chiffres pour vous montrer l'impact exact sur votre portefeuille.",
+    upsellNotFoundSentence: "Je n'ai pas encore identifié de volume éligible à une montée en gamme sur ce compte — cela vaut la peine de faire un audit rapide ensemble, car les comptes avec ce profil de croissance ont généralement une marge de progression quelque part dans le mix de licences.",
+    growthNextStep: (nextAction) => `Prochaine étape de mon côté : ${nextAction}`,
+    growthClosing: 'Peut-on bloquer 30 minutes pour une session de travail sur ce sujet — je peux volontiers apporter une proposition préliminaire ?',
+
+    qbrSubject: (quarter) => `Bilan trimestriel — ${quarter}`,
+    qbrIntro: (name, quarter) => `Avant notre point trimestriel, voici un résumé rapide de la situation de ${name} sur la base des chiffres de ${quarter} :`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Taux de renouvellement : ${pct}% (risque ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Ventes, 12 derniers mois : ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (contre ${prior} sur la période précédente)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Croissance : ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (ventes +${pct}% sur un an)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Renouvellement automatique : ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Opportunité de montée en gamme : ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} éligibles pour ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Taille du compte : ${pct}% de l'activité dans le pays`,
+    qbrOverall: (priorityLabel, nextAction) => `Globalement, je classerais ce compte en priorité ${priorityLabel} ce trimestre. ${nextAction}`,
+    qbrClosing: "Dites-moi quel créneau vous conviendrait pour une revue de 30 minutes — j'apporterai le détail complet.",
+  },
+  de: {
+    contactPlaceholder: '[Name des Kontakts]',
+    greeting: (contact) => `Hallo ${contact},`,
+    signoff: 'Beste Grüße,',
+    yourName: '[Ihr Name]',
+    accountFallback: 'das Konto',
+
+    retentionSubject: (quarter) => `Update zur Vertragsverlängerung — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} verlängert, ${notRenewed} nicht verlängert von insgesamt ${total} Verträgen)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Die Verlängerungsrate von ${name}` : 'Die Verlängerungsrate';
+      return `${subj} liegt im ${quarter} bei ${pct}${detail}${bad ? ', was unter unserem Zielwert liegt.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'relativ gleichmäßig über die Wertsegmente verteilt, einschließlich Ihrer wertvollsten Konten',
+      high: 'auf Ihre wertvollsten Konten konzentriert (10.000 $ oder mehr)',
+      low: 'auf Ihre kleineren Konten konzentriert (unter 5.000 $)',
+    },
+    valueRangeSentence: (text) => `Die Verlängerungsverluste scheinen ${text} zu sein — es lohnt sich, genauer zu prüfen, was dieses Segment antreibt.`,
+    clmInactiveSentence: 'Mir ist außerdem aufgefallen, dass das CLM-Tracking für dieses Konto noch nicht aktiv ist — eine Aktivierung würde uns beiden mehr Transparenz über anstehende Verlängerungstermine geben und Last-Minute-Überraschungen reduzieren.',
+    autoRenewSentence: (pct, bench) => `Die automatische Verlängerung liegt aktuell bei ${pct}%, gegenüber einem Benchmark von ${bench}% — eine Aktivierung bei mehr Verträgen würde das Risiko passiver Abwanderung für kommende Quartale eliminieren.`,
+    retentionProposal: (nextAction) => `Mein Vorschlag: ein 20-minütiges Gespräch diese Woche, um die gefährdeten Konten durchzugehen, die Gründe für etwaige Nichtverlängerungen zu klären und einen konkreten Bindungsplan vor Beginn des nächsten Zyklus zu vereinbaren. ${nextAction}`,
+    retentionClosing: 'Wie sieht Ihr Kalender am Mittwoch oder Donnerstag aus?',
+
+    growthSubject: (quarter) => `Wachstumschance — ${quarter}`,
+    growthBitArr: (x) => `ARR um ${x}% gestiegen`,
+    growthBitSales: (x) => `Umsatz im Jahresvergleich um ${x}% gestiegen`,
+    growthBitLicenses: (x) => `Lizenzen um ${x}% gestiegen`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Die Zahlen von ${name}` : 'Die Zahlen';
+      return `${subj} im ${quarter} zeigen echte Dynamik${detail} — Glückwunsch, das war ein starkes Quartal.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Die Zahlen von ${name}` : 'Die Zahlen';
+      return `${subj} im ${quarter}${detail} sind der Ausgangspunkt für dieses Gespräch.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Bei der Durchsicht des Kontos habe ich eine konkrete Upgrade-Möglichkeit gefunden: ${count} ${unit} berechtigt für ${label}.`,
+    upsellFoundSentence2: 'Bei den aktuellen Volumina ist das eine bedeutende Expansionsmöglichkeit für beide Seiten — ich stelle gerne Zahlen zusammen, damit Sie die genaue Auswirkung auf Ihr Portfolio sehen können.',
+    upsellNotFoundSentence: 'Ich habe bisher noch kein für ein Upsell berechtigtes Volumen auf dem Konto markiert gesehen — es lohnt sich, das gemeinsam kurz zu prüfen, da Konten mit diesem Wachstumsprofil meist irgendwo im Lizenzmix noch Upgrade-Spielraum haben.',
+    growthNextStep: (nextAction) => `Nächster Schritt meinerseits: ${nextAction}`,
+    growthClosing: 'Können wir 30 Minuten für eine Arbeitssitzung dazu einplanen — ich bringe gerne einen Entwurf mit?',
+
+    qbrSubject: (quarter) => `Geschäftsüberblick ${quarter}`,
+    qbrIntro: (name, quarter) => `Vor unserem Quartalsgespräch hier eine kurze Zusammenfassung, wo ${name} auf Basis der Zahlen für ${quarter} steht:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Verlängerungsrate: ${pct}% (Risiko: ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Umsatz, letzte 12 Monate: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (gegenüber ${prior} im Vorjahreszeitraum)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Wachstum: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (Umsatz +${pct}% im Jahresvergleich)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automatische Verlängerung: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Upgrade-Möglichkeit: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} berechtigt für ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Kontogröße: ${pct}% des Geschäfts im Land`,
+    qbrOverall: (priorityLabel, nextAction) => `Insgesamt würde ich dieses Konto diesem Quartal als Priorität ${priorityLabel} einstufen. ${nextAction}`,
+    qbrClosing: 'Sagen Sie mir gerne einen passenden Termin für ein 30-minütiges Review — ich bringe die vollständige Übersicht mit.',
+  },
+  it: {
+    contactPlaceholder: '[Nome del Contatto]',
+    greeting: (contact) => `Ciao ${contact},`,
+    signoff: 'Cordiali saluti,',
+    yourName: '[Il tuo nome]',
+    accountFallback: "l'account",
+
+    retentionSubject: (quarter) => `Aggiornamento sul rinnovo — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} rinnovati, ${notRenewed} non rinnovati su un totale di ${total} accordi)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Il tasso di rinnovo di ${name}` : 'Il tasso di rinnovo';
+      return `${subj} nel ${quarter} è pari a ${pct}${detail}${bad ? ', un valore inferiore a quello desiderato.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'distribuite in modo abbastanza uniforme tra le diverse fasce di valore, inclusi gli account di maggior valore',
+      high: 'concentrate sugli account di maggior valore (10.000 $ o più)',
+      low: 'concentrate sugli account di valore più basso (sotto i 5.000 $)',
+    },
+    valueRangeSentence: (text) => `Le perdite di rinnovo sembrano essere ${text} — vale la pena approfondire cosa sta succedendo in questo segmento.`,
+    clmInactiveSentence: "Ho anche notato che il monitoraggio CLM non è ancora attivo su questo account — attivarlo ci darebbe entrambi una migliore visibilità sulle prossime scadenze di rinnovo e ridurrebbe le sorprese dell'ultimo minuto.",
+    autoRenewSentence: (pct, bench) => `Il rinnovo automatico è attualmente al ${pct}%, contro un benchmark del ${bench}% — attivarlo su più accordi eliminerebbe il rischio di abbandono passivo nei prossimi trimestri.`,
+    retentionProposal: (nextAction) => `Ecco cosa propongo: una chiamata di 20 minuti questa settimana per rivedere gli account a rischio, confermare i motivi degli eventuali mancati rinnovi e concordare un piano di retention concreto prima dell'inizio del prossimo ciclo. ${nextAction}`,
+    retentionClosing: "Come sei messo con l'agenda mercoledì o giovedì?",
+
+    growthSubject: (quarter) => `Opportunità di crescita — ${quarter}`,
+    growthBitArr: (x) => `ARR in crescita del ${x}%`,
+    growthBitSales: (x) => `vendite in crescita del ${x}% su base annua`,
+    growthBitLicenses: (x) => `licenze in crescita del ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `I numeri di ${name}` : 'I numeri';
+      return `${subj} nel ${quarter} mostrano un momentum reale${detail} — complimenti, è stato un trimestre forte.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `I numeri di ${name}` : 'I numeri';
+      return `${subj} nel ${quarter}${detail} sono il punto di partenza di questa conversazione.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Rivedendo l'account ho individuato un'opportunità concreta di upgrade: ${count} ${unit} idonee per ${label}.`,
+    upsellFoundSentence2: "Ai volumi attuali, questa è un'opportunità di espansione significativa per entrambe le parti — sono felice di preparare i numeri per mostrarti l'impatto esatto sul tuo portafoglio.",
+    upsellNotFoundSentence: "Non ho ancora individuato volumi idonei per un upsell su questo account — vale la pena fare insieme un audit rapido, dato che gli account con questo profilo di crescita di solito hanno margine di upgrade da qualche parte nel mix di licenze.",
+    growthNextStep: (nextAction) => `Prossimo passo da parte mia: ${nextAction}`,
+    growthClosing: 'Possiamo fissare 30 minuti per una sessione di lavoro su questo — sono felice di portare una proposta preliminare?',
+
+    qbrSubject: (quarter) => `Revisione trimestrale — ${quarter}`,
+    qbrIntro: (name, quarter) => `Prima del nostro punto trimestrale, ecco un rapido riepilogo di come sta andando ${name} in base ai numeri del ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Tasso di rinnovo: ${pct}% (rischio ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Vendite, ultimi 12 mesi: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (contro ${prior} nel periodo precedente)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Crescita: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (vendite +${pct}% su base annua)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Rinnovo automatico: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Opportunità di upgrade: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} idonee per ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Dimensione dell'account: ${pct}% del business nel paese`,
+    qbrOverall: (priorityLabel, nextAction) => `Nel complesso classificherei questo account come priorità ${priorityLabel} questo trimestre. ${nextAction}`,
+    qbrClosing: "Fammi sapere un orario comodo per una revisione di 30 minuti — porterò l'analisi completa.",
+  },
+  nl: {
+    contactPlaceholder: '[Naam Contactpersoon]',
+    greeting: (contact) => `Hoi ${contact},`,
+    signoff: 'Met vriendelijke groet,',
+    yourName: '[Uw naam]',
+    accountFallback: 'het account',
+
+    retentionSubject: (quarter) => `Update verlenging — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} verlengd, ${notRenewed} niet verlengd van in totaal ${total} overeenkomsten)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Het verlengingspercentage van ${name}` : 'Het verlengingspercentage';
+      return `${subj} staat in ${quarter} op ${pct}${detail}${bad ? ', wat lager is dan gewenst.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'vrij gelijkmatig verspreid over de verschillende waardesegmenten, inclusief uw waardevolste accounts',
+      high: 'geconcentreerd bij uw waardevolste accounts ($10k+)',
+      low: 'geconcentreerd bij uw kleinere accounts (onder $5k)',
+    },
+    valueRangeSentence: (text) => `De verlengingsverliezen lijken ${text} — het is de moeite waard om beter te bekijken wat dit in dat segment veroorzaakt.`,
+    clmInactiveSentence: 'Ik merkte ook dat CLM-tracking nog niet actief is op dit account — activering zou ons beiden beter zicht geven op aankomende verlengingsdata en verrassingen op het laatste moment verminderen.',
+    autoRenewSentence: (pct, bench) => `Automatisch verlengen staat momenteel op ${pct}%, tegenover een benchmark van ${bench}% — activering bij meer overeenkomsten zou het risico op passief verloop voor komende kwartalen wegnemen.`,
+    retentionProposal: (nextAction) => `Dit stel ik voor: een gesprek van 20 minuten deze week om de accounts met risico door te nemen, de redenen voor eventuele niet-verlengingen te bevestigen en een concreet retentieplan af te spreken vóór de start van de volgende cyclus. ${nextAction}`,
+    retentionClosing: 'Hoe ziet uw agenda eruit op woensdag of donderdag?',
+
+    growthSubject: (quarter) => `Groeikans — ${quarter}`,
+    growthBitArr: (x) => `ARR met ${x}% gestegen`,
+    growthBitSales: (x) => `omzet jaar-op-jaar met ${x}% gestegen`,
+    growthBitLicenses: (x) => `licenties met ${x}% gestegen`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `De cijfers van ${name}` : 'De cijfers';
+      return `${subj} in ${quarter} laten echte momentum zien${detail} — gefeliciteerd, dat was een sterk kwartaal.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `De cijfers van ${name}` : 'De cijfers';
+      return `${subj} in ${quarter}${detail} vormen het startpunt van dit gesprek.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Bij het doornemen van het account vond ik een concrete upgrademogelijkheid: ${count} ${unit} in aanmerking voor ${label}.`,
+    upsellFoundSentence2: 'Bij de huidige volumes is dit een betekenisvolle uitbreidingskans voor beide partijen — ik stel graag de cijfers samen zodat u de exacte impact op uw portefeuille kunt zien.',
+    upsellNotFoundSentence: 'Ik heb tot nu toe geen voor upsell in aanmerking komend volume op het account gezien — het is de moeite waard om samen een korte audit te doen, aangezien accounts met dit groeiprofiel meestal ergens in de licentiemix nog ruimte voor upgrades hebben.',
+    growthNextStep: (nextAction) => `Volgende stap van mijn kant: ${nextAction}`,
+    growthClosing: 'Kunnen we 30 minuten inplannen voor een werksessie hierover — ik breng graag een conceptvoorstel mee?',
+
+    qbrSubject: (quarter) => `Kwartaaloverzicht — ${quarter}`,
+    qbrIntro: (name, quarter) => `Voorafgaand aan ons kwartaaloverleg, hier een kort overzicht van hoe ${name} ervoor staat op basis van de cijfers van ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Verlengingspercentage: ${pct}% (risico: ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Omzet, afgelopen 12 maanden: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (tegenover ${prior} in de vorige periode)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Groei: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (omzet +${pct}% jaar-op-jaar)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automatisch verlengen: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Upgrademogelijkheid: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} in aanmerking voor ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Omvang account: ${pct}% van de business in het land`,
+    qbrOverall: (priorityLabel, nextAction) => `Over het geheel genomen zou ik dit account dit kwartaal als prioriteit ${priorityLabel} bestempelen. ${nextAction}`,
+    qbrClosing: 'Laat weten welk tijdstip u schikt voor een review van 30 minuten — ik neem de volledige uitsplitsing mee.',
+  },
+  pl: {
+    contactPlaceholder: '[Imię Kontaktu]',
+    greeting: (contact) => `Cześć ${contact},`,
+    signoff: 'Pozdrawiam,',
+    yourName: '[Twoje imię]',
+    accountFallback: 'konto',
+
+    retentionSubject: (quarter) => `Aktualizacja dot. odnowienia — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} odnowionych, ${notRenewed} nieodnowionych z łącznie ${total} umów)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Wskaźnik odnowień dla ${name}` : 'Wskaźnik odnowień';
+      return `${subj} w ${quarter} wynosi ${pct}${detail}${bad ? ', co jest poniżej oczekiwanego poziomu.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'rozłożone dość równomiernie w różnych przedziałach wartości, w tym w kontach o najwyższej wartości',
+      high: 'skoncentrowane w kontach o wysokiej wartości (10 000 USD lub więcej)',
+      low: 'skoncentrowane w mniejszych kontach (poniżej 5000 USD)',
+    },
+    valueRangeSentence: (text) => `Straty odnowień wydają się ${text} — warto bliżej przyjrzeć się, co za tym stoi w tym segmencie.`,
+    clmInactiveSentence: 'Zauważyłem też, że śledzenie CLM nie jest jeszcze aktywne na tym koncie — jego aktywacja dałaby nam obu lepszy wgląd w nadchodzące terminy odnowień i zmniejszyła liczbę niespodzianek w ostatniej chwili.',
+    autoRenewSentence: (pct, bench) => `Automatyczne odnawianie wynosi obecnie ${pct}%, wobec benchmarku ${bench}% — aktywacja przy większej liczbie umów wyeliminowałaby ryzyko biernej rezygnacji w kolejnych kwartałach.`,
+    retentionProposal: (nextAction) => `Oto co proponuję: 20-minutowa rozmowa w tym tygodniu, aby przejrzeć konta zagrożone, potwierdzić przyczyny ewentualnych nieodnowień i ustalić konkretny plan retencji przed rozpoczęciem kolejnego cyklu. ${nextAction}`,
+    retentionClosing: 'Jak wygląda Twój kalendarz w środę lub czwartek?',
+
+    growthSubject: (quarter) => `Szansa na wzrost — ${quarter}`,
+    growthBitArr: (x) => `ARR wzrósł o ${x}%`,
+    growthBitSales: (x) => `sprzedaż wzrosła o ${x}% rok do roku`,
+    growthBitLicenses: (x) => `liczba licencji wzrosła o ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Wyniki ${name}` : 'Wyniki';
+      return `${subj} w ${quarter} pokazują realny impet${detail} — gratulacje, to był mocny kwartał.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Wyniki ${name}` : 'Wyniki';
+      return `${subj} w ${quarter}${detail} są punktem wyjścia do tej rozmowy.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Podczas przeglądu konta znalazłem konkretną szansę na upgrade: ${count} ${unit} kwalifikujących się do ${label}.`,
+    upsellFoundSentence2: 'Przy obecnych wolumenach to znacząca szansa na ekspansję dla obu stron — chętnie przygotuję liczby, aby pokazać dokładny wpływ na Twój portfel.',
+    upsellNotFoundSentence: "Nie zauważyłem jeszcze na koncie wolumenu kwalifikującego się do upsellu — warto wspólnie przeprowadzić szybki audyt, ponieważ konta o takim profilu wzrostu zwykle mają gdzieś w miksie licencji zapas do upgrade'u.",
+    growthNextStep: (nextAction) => `Kolejny krok z mojej strony: ${nextAction}`,
+    growthClosing: 'Czy możemy zarezerwować 30 minut na sesję roboczą w tej sprawie — chętnie przygotuję wstępną propozycję?',
+
+    qbrSubject: (quarter) => `Przegląd biznesowy — ${quarter}`,
+    qbrIntro: (name, quarter) => `Przed naszym kwartalnym podsumowaniem, oto krótkie zestawienie sytuacji ${name} na podstawie danych za ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Wskaźnik odnowień: ${pct}% (ryzyko: ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Sprzedaż, ostatnie 12 miesięcy: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (wobec ${prior} w poprzednim okresie)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Wzrost: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (sprzedaż +${pct}% rok do roku)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automatyczne odnawianie: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Szansa na upgrade: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} kwalifikujących się do ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Wielkość konta: ${pct}% biznesu w kraju`,
+    qbrOverall: (priorityLabel, nextAction) => `Ogólnie sklasyfikowałbym to konto jako priorytet ${priorityLabel} w tym kwartale. ${nextAction}`,
+    qbrClosing: 'Daj znać, jaki termin pasuje na 30-minutowy przegląd — przygotuję pełne zestawienie.',
+  },
+};
+
+function composeRetentionEmail(i, m, ctx, lang) {
+  const P = EMAIL_PHRASES[lang] || EMAIL_PHRASES.en;
+  const { rBand, name, subjectName, renewalPct } = ctx;
+  const contact = i.contactName || P.contactPlaceholder;
+  const quarter = i.quarter;
   const parts = [];
-  parts.push(`Subject: ${subjectName}Renewal check-in — ${i.quarter}`);
+  parts.push(`Subject: ${subjectName}${P.retentionSubject(quarter)}`);
   parts.push('');
-  parts.push(`Hi ${contact},`);
+  parts.push(P.greeting(contact));
   parts.push('');
 
   if (renewalPct) {
-    let line = `${numbersFor} renewal rate is at ${renewalPct}`;
+    let detail = '';
     if (i.agreementsTotal !== null && i.agreementsNotRenewed !== null) {
-      line += ` (${i.agreementsRenewed ?? '—'} renewed, ${i.agreementsNotRenewed} not renewed out of ${i.agreementsTotal} agreements)`;
+      detail = P.renewalDetail(i.agreementsRenewed ?? '—', i.agreementsNotRenewed, i.agreementsTotal);
     }
-    line += rBand.status === 'critical' || rBand.status === 'serious' ? ", which is below where we'd like it." : '.';
-    parts.push(line);
+    const bad = rBand.status === 'critical' || rBand.status === 'serious';
+    parts.push(P.renewalRateSentence(name, quarter, renewalPct, detail, bad));
   }
 
   if (m.valueRangeRisk) {
-    const vrText = { systemic: 'spread fairly evenly across value ranges, including your highest-value accounts', high: 'concentrated in your high-value accounts ($10k+)', low: 'concentrated in your smaller accounts (under $5k)' }[m.valueRangeRisk];
-    parts.push(`The renewal losses look ${vrText} — worth a closer look at what's driving that segment.`);
+    parts.push(P.valueRangeSentence(P.valueRangeRiskPhrase[m.valueRangeRisk]));
   }
 
   if (i.clmStatus === 'inactive') {
-    parts.push("I also noticed CLM tracking isn't active on the account yet — turning it on would give both of us better visibility into upcoming renewal dates and reduce last-minute surprises.");
+    parts.push(P.clmInactiveSentence);
   }
 
   if (m.arPct !== null && m.arBenchmark !== null && m.autoRenewScore !== null && autoRenewBand(m.autoRenewScore).status !== 'good') {
-    parts.push(`Auto-renew is running at ${fmt(m.arPct,1)}% versus a ${fmt(m.arBenchmark,1)}% benchmark — enabling it on more agreements would take passive churn off the table for future quarters.`);
+    parts.push(P.autoRenewSentence(fmt(m.arPct,1), fmt(m.arBenchmark,1)));
   }
 
-  pushPara(parts, `Here's what I'd propose: a 20-minute call this week to walk through the accounts at risk, confirm the reasons behind any non-renewals, and agree on a concrete save plan before next quarter's cycle starts. ${buildNextAction(i, m)}`);
+  pushPara(parts, P.retentionProposal(buildNextAction(i, m, lang)));
   parts.push('');
-  parts.push('What does your calendar look like Wednesday or Thursday?');
+  parts.push(P.retentionClosing);
   parts.push('');
-  parts.push('Best regards,');
-  parts.push('[Your Name]');
+  parts.push(P.signoff);
+  parts.push(P.yourName);
   return parts.join('\n');
 }
 
-function buildGrowthUpsellEmail(i, m, ctx) {
-  const { gBand, contact, subjectName, numbersFor } = ctx;
+function composeGrowthEmail(i, m, ctx, lang) {
+  const P = EMAIL_PHRASES[lang] || EMAIL_PHRASES.en;
+  const { gBand, name, subjectName } = ctx;
+  const contact = i.contactName || P.contactPlaceholder;
+  const quarter = i.quarter;
   const parts = [];
-  parts.push(`Subject: ${subjectName}Growth opportunity — ${i.quarter}`);
+  parts.push(`Subject: ${subjectName}${P.growthSubject(quarter)}`);
   parts.push('');
-  parts.push(`Hi ${contact},`);
+  parts.push(P.greeting(contact));
   parts.push('');
 
   if (m.growthScore !== null) {
     const bits = [];
-    if (i.arrGrowth !== null) bits.push(`ARR up ${fmt(i.arrGrowth,1)}%`);
-    if (m.salesGrowthPct !== null) bits.push(`sales up ${fmt(m.salesGrowthPct,1)}% year-over-year`);
-    if (i.licensesDelta !== null) bits.push(`licenses up ${fmt(i.licensesDelta,1)}%`);
+    if (i.arrGrowth !== null) bits.push(P.growthBitArr(fmt(i.arrGrowth,1)));
+    if (m.salesGrowthPct !== null) bits.push(P.growthBitSales(fmt(m.salesGrowthPct,1)));
+    if (i.licensesDelta !== null) bits.push(P.growthBitLicenses(fmt(i.licensesDelta,1)));
     const detail = bits.length ? ` (${bits.join(', ')})` : '';
     if (gBand.label === 'Strong growth' || gBand.label === 'Growth') {
-      parts.push(`${numbersFor} numbers show real momentum${detail} — congratulations, that's a strong quarter.`);
+      parts.push(P.growthStrongSentence(name, quarter, detail));
     } else {
-      parts.push(`${numbersFor} numbers${detail} are where I wanted to start this conversation.`);
+      parts.push(P.growthWeakSentence(name, quarter, detail));
     }
   }
 
   if (m.anyUpsellData && m.dominantPath && m.dominantPath.count > 0) {
-    pushPara(parts, `While reviewing the account I found a concrete upgrade opportunity: ${m.dominantPath.count} ${m.dominantPath.unit} eligible for ${m.dominantPath.label}.`);
-    parts.push(`At current volumes, that's a meaningful expansion opportunity for both sides — happy to put together numbers so you can see the exact impact on your book.`);
+    pushPara(parts, P.upsellFoundSentence1(m.dominantPath.count, tr(UNIT_LABEL, lang, m.dominantPath.unit), m.dominantPath.label));
+    parts.push(P.upsellFoundSentence2);
   } else {
-    pushPara(parts, "I didn't see upsell-eligible volume flagged on the account yet — worth a quick audit together to confirm, since accounts with this growth profile usually have upgrade headroom somewhere in the license mix.");
+    pushPara(parts, P.upsellNotFoundSentence);
   }
 
-  pushPara(parts, `Next step on my side: ${buildNextAction(i, m)}`);
+  pushPara(parts, P.growthNextStep(buildNextAction(i, m, lang)));
   parts.push('');
-  parts.push('Could we grab 30 minutes for a working session on this — happy to bring a draft proposal?');
+  parts.push(P.growthClosing);
   parts.push('');
-  parts.push('Best regards,');
-  parts.push('[Your Name]');
+  parts.push(P.signoff);
+  parts.push(P.yourName);
   return parts.join('\n');
 }
 
-function buildQbrEmail(i, m, ctx) {
-  const { contact, subjectName } = ctx;
+function composeQbrEmail(i, m, ctx, lang) {
+  const P = EMAIL_PHRASES[lang] || EMAIL_PHRASES.en;
+  const { name, subjectName } = ctx;
+  const contact = i.contactName || P.contactPlaceholder;
+  const quarter = i.quarter;
   const pBand = priorityBand(m.overallPriority);
   const rBand = riskBand(m.renewalHealth);
   const gBand = growthBand(m.growthScore);
@@ -652,34 +1292,60 @@ function buildQbrEmail(i, m, ctx) {
   const uBand = upsellBand(m.upsellScore);
 
   const parts = [];
-  parts.push(`Subject: ${subjectName}${i.quarter} business review`);
+  parts.push(`Subject: ${subjectName}${P.qbrSubject(quarter)}`);
   parts.push('');
-  parts.push(`Hi ${contact},`);
+  parts.push(P.greeting(contact));
   parts.push('');
-  parts.push(`Ahead of our quarterly check-in, here's a quick summary of where ${ctx.name || 'the account'} stands based on ${i.quarter}'s numbers:`);
+  parts.push(P.qbrIntro(name || P.accountFallback, quarter));
   parts.push('');
-  if (i.renewalRate !== null) parts.push(`- Renewal rate: ${fmt(i.renewalRate,1)}% (${rBand.label.toLowerCase()} risk)`);
-  if (i.salesCurrent12m !== null) parts.push(`- Sales, trailing 12m: ${money(i.salesCurrent12m)}${i.salesPrevious12m !== null ? ` (vs. ${money(i.salesPrevious12m)} prior period)` : ''}`);
-  if (m.growthScore !== null) parts.push(`- Growth: ${gBand.label.toLowerCase()}${m.salesGrowthPct !== null ? ` (sales ${fmt(m.salesGrowthPct,1)}% YoY)` : ''}`);
-  if (m.autoRenewScore !== null) parts.push(`- Auto-renew: ${aBand.label.toLowerCase()}${m.arPct !== null ? ` (${fmt(m.arPct,1)}%)` : ''}`);
-  if (m.upsellScore !== null) parts.push(`- Upgrade opportunity: ${uBand.label.toLowerCase()}${m.anyUpsellData && m.dominantPath && m.dominantPath.count > 0 ? ` — ${m.dominantPath.count} ${m.dominantPath.unit} eligible for ${m.dominantPath.label}` : ''}`);
-  if (m.sizeShare !== null) parts.push(`- Account size: ${fmt(m.sizeShare,1)}% of the in-country business`);
-  pushPara(parts, `Overall I'd flag this account as ${pBand.label.toLowerCase()} priority this quarter. ${buildNextAction(i, m)}`);
+  if (i.renewalRate !== null) parts.push(P.qbrRenewalBullet(fmt(i.renewalRate,1), tr(RISK_LABEL, lang, rBand.label)));
+  if (i.salesCurrent12m !== null) {
+    const priorSuffix = i.salesPrevious12m !== null ? P.qbrSalesPrior(money(i.salesPrevious12m)) : '';
+    parts.push(P.qbrSalesBullet(money(i.salesCurrent12m), priorSuffix));
+  }
+  if (m.growthScore !== null) {
+    const salesSuffix = m.salesGrowthPct !== null ? P.qbrGrowthSalesSuffix(fmt(m.salesGrowthPct,1)) : '';
+    parts.push(P.qbrGrowthBullet(tr(GROWTH_LABEL, lang, gBand.label), salesSuffix));
+  }
+  if (m.autoRenewScore !== null) {
+    const pctSuffix = m.arPct !== null ? P.qbrAutoRenewPctSuffix(fmt(m.arPct,1)) : '';
+    parts.push(P.qbrAutoRenewBullet(tr(AUTORENEW_LABEL, lang, aBand.label), pctSuffix));
+  }
+  if (m.upsellScore !== null) {
+    const detailSuffix = (m.anyUpsellData && m.dominantPath && m.dominantPath.count > 0)
+      ? P.qbrUpsellDetailSuffix(m.dominantPath.count, tr(UNIT_LABEL, lang, m.dominantPath.unit), m.dominantPath.label)
+      : '';
+    parts.push(P.qbrUpsellBullet(tr(OPPORTUNITY_LABEL, lang, uBand.label), detailSuffix));
+  }
+  if (m.sizeShare !== null) parts.push(P.qbrSizeBullet(fmt(m.sizeShare,1)));
+  pushPara(parts, P.qbrOverall(tr(PRIORITY_LABEL, lang, pBand.label), buildNextAction(i, m, lang)));
   parts.push('');
-  parts.push('Let me know a time that works for a 30-minute review — I\'ll bring the full breakdown.');
+  parts.push(P.qbrClosing);
   parts.push('');
-  parts.push('Best regards,');
-  parts.push('[Your Name]');
+  parts.push(P.signoff);
+  parts.push(P.yourName);
   return parts.join('\n');
 }
 
 function buildEmailVariants(i, m) {
   const ctx = emailContext(i, m);
-  return [
-    { label: 'Retention-focused', text: buildRetentionEmail(i, m, ctx) },
-    { label: 'Growth & upsell', text: buildGrowthUpsellEmail(i, m, ctx) },
-    { label: 'Quarterly review', text: buildQbrEmail(i, m, ctx) },
+  const lang = i.countryLang || 'en';
+  const composers = [
+    { label: 'Retention-focused', fn: composeRetentionEmail },
+    { label: 'Growth & upsell', fn: composeGrowthEmail },
+    { label: 'Quarterly review', fn: composeQbrEmail },
   ];
+  return composers.map(({ label, fn }) => {
+    const textEn = fn(i, m, ctx, 'en');
+    const hasTranslation = lang !== 'en' && Boolean(EMAIL_PHRASES[lang]);
+    return {
+      label,
+      textEn,
+      textTranslated: hasTranslation ? fn(i, m, ctx, lang) : null,
+      lang,
+      langName: LANG_NAMES[lang] || null,
+    };
+  });
 }
 
 // ---------- render ----------
@@ -755,10 +1421,20 @@ function renderEmailVariants(variants) {
 }
 
 function showEmailVariant(idx) {
-  document.getElementById('email-draft').textContent = currentEmailVariants[idx].text;
+  const variant = currentEmailVariants[idx];
+  document.getElementById('email-draft-en').textContent = variant.textEn;
   document.querySelectorAll('#email-variant-tabs .email-tab').forEach(btn => {
     btn.setAttribute('aria-selected', String(Number(btn.dataset.index) === idx));
   });
+
+  const translatedWrap = document.getElementById('email-draft-translated-wrap');
+  if (variant.textTranslated) {
+    document.getElementById('email-draft-lang-label').textContent = variant.langName;
+    document.getElementById('email-draft-translated').textContent = variant.textTranslated;
+    translatedWrap.hidden = false;
+  } else {
+    translatedWrap.hidden = true;
+  }
 }
 
 document.getElementById('email-variant-tabs').addEventListener('click', (e) => {
@@ -769,15 +1445,14 @@ document.getElementById('email-variant-tabs').addEventListener('click', (e) => {
 
 // ---------- copy email ----------
 
-async function copyEmail() {
-  const text = document.getElementById('email-draft').textContent;
-  const btn = document.getElementById('copy-email');
+async function copyEmail(sourceId, btn) {
+  const text = document.getElementById(sourceId).textContent;
   try {
     await navigator.clipboard.writeText(text);
     flashCopyButton(btn, 'Copied!');
   } catch (err) {
     const range = document.createRange();
-    range.selectNodeContents(document.getElementById('email-draft'));
+    range.selectNodeContents(document.getElementById(sourceId));
     const selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
@@ -809,6 +1484,7 @@ function buildReportRows(i, m) {
     ['Field', 'Value'],
     ['Reseller', i.resellerName || ''],
     ['Contact', i.contactName || ''],
+    ['Country', i.country || ''],
     ['Quarter', i.quarter],
     ['Overall Priority (score)', m.overallPriority === null ? '' : Math.round(m.overallPriority)],
     ['Overall Priority (label)', pBand.label],
@@ -874,7 +1550,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Meridian Systems Group — large account, critical renewal risk',
     data: {
-      resellerName: 'Meridian Systems Group', contactName: 'Dana Whitfield', quarter: 'Q3 2026',
+      resellerName: 'Meridian Systems Group', contactName: 'Dana Whitfield', resellerCountry: 'France', quarter: 'Q3 2026',
       renewalRate: 42, agreementsTotal: 60, agreementsRenewed: 25, agreementsPartial: 5, agreementsNotRenewed: 30,
       clmStatus: 'inactive',
       vr_0_1: 55, vr_1_5: 48, vr_5_10: 30, vr_10_25: 22, vr_25_50: 15, vr_50_plus: 10,
@@ -888,7 +1564,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Brightline Creative Partners — strong renewal, upsell-ready',
     data: {
-      resellerName: 'Brightline Creative Partners', contactName: 'Priya Nandakumar', quarter: 'Q3 2026',
+      resellerName: 'Brightline Creative Partners', contactName: 'Priya Nandakumar', resellerCountry: 'Portugal', quarter: 'Q3 2026',
       renewalRate: 96, agreementsTotal: 50, agreementsRenewed: 48, agreementsPartial: 1, agreementsNotRenewed: 1,
       clmStatus: 'active',
       vr_0_1: 97, vr_1_5: 96, vr_5_10: 95, vr_10_25: 94, vr_25_50: 93, vr_50_plus: 92,
@@ -902,7 +1578,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Coastal Office Systems — healthy renewal, auto-renew gap',
     data: {
-      resellerName: 'Coastal Office Systems', contactName: 'Marcus Delgado', quarter: 'Q3 2026',
+      resellerName: 'Coastal Office Systems', contactName: 'Marcus Delgado', resellerCountry: 'Germany', quarter: 'Q3 2026',
       renewalRate: 83, agreementsTotal: 70, agreementsRenewed: 58, agreementsPartial: 6, agreementsNotRenewed: 6,
       clmStatus: 'active',
       arrGrowth: 3, salesCurrent12m: 510000, salesPrevious12m: 495000, monthlyAverage: 43000, currentMonthExtrap: 42000,
@@ -915,7 +1591,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Union & Wells Marketing — healthy renewal, growth slowing',
     data: {
-      resellerName: 'Union & Wells Marketing', contactName: 'Sophie Larkin', quarter: 'Q3 2026',
+      resellerName: 'Union & Wells Marketing', contactName: 'Sophie Larkin', resellerCountry: 'Spain', quarter: 'Q3 2026',
       renewalRate: 89, agreementsTotal: 45, agreementsRenewed: 40, agreementsPartial: 3, agreementsNotRenewed: 2,
       clmStatus: 'active',
       arrGrowth: -14, salesCurrent12m: 310000, salesPrevious12m: 430000, monthlyAverage: 28000, currentMonthExtrap: 24000,
@@ -928,7 +1604,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Foundry Nine Studio — small reseller, fast growth',
     data: {
-      resellerName: 'Foundry Nine Studio', contactName: 'Alex Reyes', quarter: 'Q3 2026',
+      resellerName: 'Foundry Nine Studio', contactName: 'Alex Reyes', resellerCountry: 'Italy', quarter: 'Q3 2026',
       renewalRate: 86, agreementsTotal: 12, agreementsRenewed: 11, agreementsPartial: 1, agreementsNotRenewed: 0,
       clmStatus: 'active',
       arrGrowth: 34, salesCurrent12m: 85000, salesPrevious12m: 52000, monthlyAverage: 7000, currentMonthExtrap: 9000,
@@ -941,7 +1617,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Hallmark Business Interiors — steady, no urgent action',
     data: {
-      resellerName: 'Hallmark Business Interiors', contactName: 'Renee Ashford', quarter: 'Q3 2026',
+      resellerName: 'Hallmark Business Interiors', contactName: 'Renee Ashford', resellerCountry: 'Netherlands', quarter: 'Q3 2026',
       renewalRate: 84, agreementsTotal: 55, agreementsRenewed: 46, agreementsPartial: 5, agreementsNotRenewed: 4,
       clmStatus: 'active',
       arrGrowth: 4, salesCurrent12m: 460000, salesPrevious12m: 440000, monthlyAverage: 38000, currentMonthExtrap: 39000,
@@ -954,7 +1630,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Vantage Point Consulting — renewal risk + upsell opportunity',
     data: {
-      resellerName: 'Vantage Point Consulting', contactName: 'Owen McAllister', quarter: 'Q3 2026',
+      resellerName: 'Vantage Point Consulting', contactName: 'Owen McAllister', resellerCountry: 'Poland', quarter: 'Q3 2026',
       renewalRate: 45, agreementsTotal: 48, agreementsRenewed: 22, agreementsPartial: 6, agreementsNotRenewed: 20,
       clmStatus: 'inactive',
       arrGrowth: 2, salesCurrent12m: 400000, salesPrevious12m: 390000, monthlyAverage: 34000, currentMonthExtrap: 33000,
@@ -967,7 +1643,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Silverline Office Group — moderate renewal risk',
     data: {
-      resellerName: 'Silverline Office Group', contactName: 'Katrina Voss', quarter: 'Q3 2026',
+      resellerName: 'Silverline Office Group', contactName: 'Katrina Voss', resellerCountry: 'United Kingdom', quarter: 'Q3 2026',
       renewalRate: 45, agreementsTotal: 40, agreementsRenewed: 17, agreementsPartial: 5, agreementsNotRenewed: 18,
       clmStatus: 'active',
       arrGrowth: 1, salesCurrent12m: 250000, salesPrevious12m: 245000, monthlyAverage: 21000, currentMonthExtrap: 20000,
@@ -980,7 +1656,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Continental Design Alliance — strategic account, upsell headroom',
     data: {
-      resellerName: 'Continental Design Alliance', contactName: 'Julia Bergstrom', quarter: 'Q3 2026',
+      resellerName: 'Continental Design Alliance', contactName: 'Julia Bergstrom', resellerCountry: 'Brazil', quarter: 'Q3 2026',
       renewalRate: 97, agreementsTotal: 90, agreementsRenewed: 88, agreementsPartial: 1, agreementsNotRenewed: 1,
       clmStatus: 'active',
       arrGrowth: 7, salesCurrent12m: 2400000, salesPrevious12m: 2250000, monthlyAverage: 200000, currentMonthExtrap: 205000,
@@ -993,7 +1669,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Atlas Peak Reseller — minimal data (partial form demo)',
     data: {
-      resellerName: 'Atlas Peak Reseller', quarter: 'Q3 2026',
+      resellerName: 'Atlas Peak Reseller', resellerCountry: 'Other', quarter: 'Q3 2026',
       renewalRate: 75,
       clmStatus: 'active',
     },

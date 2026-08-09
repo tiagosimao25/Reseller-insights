@@ -54,6 +54,28 @@
           <input type="text" id="contactName" placeholder="e.g. Maria Silva" autocomplete="off">
         </label>
         <p class="field-hint">Fills in the "[Contact Name]" greeting in the suggested email.</p>
+
+        <label class="contact-name-label required" for="resellerCountry"><span class="label-text">Country</span>
+          <select id="resellerCountry" required>
+            <option value="">— select —</option>
+            <option value="Austria" data-lang="de">Austria</option>
+            <option value="Belgium" data-lang="nl">Belgium</option>
+            <option value="Brazil" data-lang="pt">Brazil</option>
+            <option value="France" data-lang="fr">France</option>
+            <option value="Germany" data-lang="de">Germany</option>
+            <option value="Ireland" data-lang="en">Ireland</option>
+            <option value="Italy" data-lang="it">Italy</option>
+            <option value="Netherlands" data-lang="nl">Netherlands</option>
+            <option value="Poland" data-lang="pl">Poland</option>
+            <option value="Portugal" data-lang="pt">Portugal</option>
+            <option value="Spain" data-lang="es">Spain</option>
+            <option value="Switzerland" data-lang="de">Switzerland</option>
+            <option value="United Kingdom" data-lang="en">United Kingdom</option>
+            <option value="United States" data-lang="en">United States</option>
+            <option value="Other" data-lang="en">Other</option>
+          </select>
+        </label>
+        <p class="field-hint">Sets the language of the second (translated) email draft. "Other" and English-speaking countries get an English-only draft.</p>
       </div>
 
       <fieldset id="section-renewal">
@@ -310,10 +332,25 @@
         <div class="block">
           <div class="block-header">
             <h2>Suggested Email <span class="opt">(3 drafts — pick an angle)</span></h2>
-            <button type="button" id="copy-email" class="btn-copy">Copy</button>
           </div>
           <div class="email-variant-tabs" id="email-variant-tabs" role="tablist" aria-label="Email draft angle"></div>
-          <pre id="email-draft" class="email-draft">—</pre>
+
+          <div class="email-draft-group">
+            <div class="email-draft-block">
+              <div class="email-draft-block-header">
+                <span class="email-draft-lang">English</span>
+                <button type="button" id="copy-email-en" class="btn-copy">Copy</button>
+              </div>
+              <pre id="email-draft-en" class="email-draft">—</pre>
+            </div>
+            <div class="email-draft-block" id="email-draft-translated-wrap" hidden>
+              <div class="email-draft-block-header">
+                <span class="email-draft-lang" id="email-draft-lang-label">Translated</span>
+                <button type="button" id="copy-email-translated" class="btn-copy">Copy</button>
+              </div>
+              <pre id="email-draft-translated" class="email-draft">—</pre>
+            </div>
+          </div>
         </div>
 
         <div class="block block-export">
