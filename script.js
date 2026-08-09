@@ -526,7 +526,7 @@ function ruleMatches(when, bandLabels) {
   });
 }
 
-const LANG_NAMES = { en: 'English', pt: 'Portuguese', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian', nl: 'Dutch', pl: 'Polish' };
+const LANG_NAMES = { en: 'English', pt: 'Portuguese', es: 'Spanish', fr: 'French', de: 'German', it: 'Italian', nl: 'Dutch', pl: 'Polish', cs: 'Czech', ro: 'Romanian', sv: 'Swedish', no: 'Norwegian', da: 'Danish', fi: 'Finnish' };
 
 function tr(dict, lang, label) {
   return (dict[lang] && dict[lang][label]) || label.toLowerCase();
@@ -541,6 +541,12 @@ const RISK_LABEL = {
   it: { Low: 'basso', Medium: 'medio', High: 'alto', Critical: 'critico' },
   nl: { Low: 'laag', Medium: 'gemiddeld', High: 'hoog', Critical: 'kritiek' },
   pl: { Low: 'niskie', Medium: 'średnie', High: 'wysokie', Critical: 'krytyczne' },
+  cs: { Low: 'nízké', Medium: 'střední', High: 'vysoké', Critical: 'kritické' },
+  ro: { Low: 'scăzut', Medium: 'mediu', High: 'ridicat', Critical: 'critic' },
+  sv: { Low: 'låg', Medium: 'medel', High: 'hög', Critical: 'kritisk' },
+  no: { Low: 'lav', Medium: 'middels', High: 'høy', Critical: 'kritisk' },
+  da: { Low: 'lav', Medium: 'middel', High: 'høj', Critical: 'kritisk' },
+  fi: { Low: 'matala', Medium: 'keskitasoinen', High: 'korkea', Critical: 'kriittinen' },
 };
 
 const OPPORTUNITY_LABEL = {
@@ -552,6 +558,12 @@ const OPPORTUNITY_LABEL = {
   it: { Low: 'bassa', Medium: 'media', High: 'alta', None: 'nessuna' },
   nl: { Low: 'laag', Medium: 'gemiddeld', High: 'hoog', None: 'geen' },
   pl: { Low: 'niska', Medium: 'średnia', High: 'wysoka', None: 'brak' },
+  cs: { Low: 'nízká', Medium: 'střední', High: 'vysoká', None: 'žádná' },
+  ro: { Low: 'scăzută', Medium: 'medie', High: 'ridicată', None: 'niciuna' },
+  sv: { Low: 'låg', Medium: 'medel', High: 'hög', None: 'ingen' },
+  no: { Low: 'lav', Medium: 'middels', High: 'høy', None: 'ingen' },
+  da: { Low: 'lav', Medium: 'middel', High: 'høj', None: 'ingen' },
+  fi: { Low: 'matala', Medium: 'keskitasoinen', High: 'korkea', None: 'ei mitään' },
 };
 
 const PRIORITY_LABEL = {
@@ -563,6 +575,12 @@ const PRIORITY_LABEL = {
   it: { Low: 'bassa', Medium: 'media', High: 'alta', 'Very High': 'molto alta' },
   nl: { Low: 'laag', Medium: 'gemiddeld', High: 'hoog', 'Very High': 'zeer hoog' },
   pl: { Low: 'niski', Medium: 'średni', High: 'wysoki', 'Very High': 'bardzo wysoki' },
+  cs: { Low: 'nízká', Medium: 'střední', High: 'vysoká', 'Very High': 'velmi vysoká' },
+  ro: { Low: 'scăzută', Medium: 'medie', High: 'ridicată', 'Very High': 'foarte ridicată' },
+  sv: { Low: 'låg', Medium: 'medel', High: 'hög', 'Very High': 'mycket hög' },
+  no: { Low: 'lav', Medium: 'middels', High: 'høy', 'Very High': 'svært høy' },
+  da: { Low: 'lav', Medium: 'middel', High: 'høj', 'Very High': 'meget høj' },
+  fi: { Low: 'matala', Medium: 'keskitasoinen', High: 'korkea', 'Very High': 'erittäin korkea' },
 };
 
 const GROWTH_LABEL = {
@@ -574,6 +592,12 @@ const GROWTH_LABEL = {
   it: { 'Strong growth': 'crescita forte', Growth: 'crescita', Stable: 'stabile', Decline: 'in calo' },
   nl: { 'Strong growth': 'sterke groei', Growth: 'groei', Stable: 'stabiel', Decline: 'dalend' },
   pl: { 'Strong growth': 'silny wzrost', Growth: 'wzrost', Stable: 'stabilny', Decline: 'spadek' },
+  cs: { 'Strong growth': 'silný růst', Growth: 'růst', Stable: 'stabilní', Decline: 'v poklesu' },
+  ro: { 'Strong growth': 'creștere puternică', Growth: 'creștere', Stable: 'stabil', Decline: 'în declin' },
+  sv: { 'Strong growth': 'stark tillväxt', Growth: 'tillväxt', Stable: 'stabil', Decline: 'nedåtgående' },
+  no: { 'Strong growth': 'sterk vekst', Growth: 'vekst', Stable: 'stabil', Decline: 'nedadgående' },
+  da: { 'Strong growth': 'stærk vækst', Growth: 'vækst', Stable: 'stabil', Decline: 'nedadgående' },
+  fi: { 'Strong growth': 'vahva kasvu', Growth: 'kasvu', Stable: 'vakaa', Decline: 'laskeva' },
 };
 
 const AUTORENEW_LABEL = {
@@ -585,6 +609,12 @@ const AUTORENEW_LABEL = {
   it: { 'Above average': 'sopra la media', 'At average': 'nella media', 'Below average': 'sotto la media' },
   nl: { 'Above average': 'boven gemiddeld', 'At average': 'gemiddeld', 'Below average': 'onder gemiddeld' },
   pl: { 'Above average': 'powyżej średniej', 'At average': 'na poziomie średnim', 'Below average': 'poniżej średniej' },
+  cs: { 'Above average': 'nad průměrem', 'At average': 'na průměru', 'Below average': 'pod průměrem' },
+  ro: { 'Above average': 'peste medie', 'At average': 'la medie', 'Below average': 'sub medie' },
+  sv: { 'Above average': 'över genomsnittet', 'At average': 'på genomsnittet', 'Below average': 'under genomsnittet' },
+  no: { 'Above average': 'over gjennomsnittet', 'At average': 'på gjennomsnittet', 'Below average': 'under gjennomsnittet' },
+  da: { 'Above average': 'over gennemsnittet', 'At average': 'på gennemsnittet', 'Below average': 'under gennemsnittet' },
+  fi: { 'Above average': 'keskiarvon yläpuolella', 'At average': 'keskiarvon tasolla', 'Below average': 'keskiarvon alapuolella' },
 };
 
 const UNIT_LABEL = {
@@ -596,6 +626,12 @@ const UNIT_LABEL = {
   it: { licenses: 'licenze', agreements: 'accordi' },
   nl: { licenses: 'licenties', agreements: 'overeenkomsten' },
   pl: { licenses: 'licencje', agreements: 'umowy' },
+  cs: { licenses: 'licencí', agreements: 'smluv' },
+  ro: { licenses: 'licențe', agreements: 'acorduri' },
+  sv: { licenses: 'licenser', agreements: 'avtal' },
+  no: { licenses: 'lisenser', agreements: 'avtaler' },
+  da: { licenses: 'licenser', agreements: 'aftaler' },
+  fi: { licenses: 'lisenssiä', agreements: 'sopimusta' },
 };
 
 const NEXT_ACTION_TRANSLATIONS = {
@@ -607,6 +643,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: 'Azione urgente: escalation a un account manager senior e pianificare una chiamata di retention questa settimana — un reseller di grandi dimensioni è a rischio critico.',
     nl: 'Urgente actie: escaleer naar een senior accountmanager en plan deze week een retentiegesprek — een grote reseller loopt een kritiek risico.',
     pl: 'Pilne działanie: eskaluj sprawę do starszego opiekuna klienta i zaplanuj w tym tygodniu rozmowę retencyjną — duży reseller jest w krytycznym stanie ryzyka.',
+    cs: 'Naléhavá akce: eskalujte na seniorního account manažera a naplánujte tento týden retenční hovor — velký reseller je v kritickém riziku.',
+    ro: 'Acțiune urgentă: escaladați către un account manager senior și programați un apel de retenție săptămâna aceasta — un reseller mare este în risc critic.',
+    sv: 'Brådskande åtgärd: eskalera till en senior account manager och boka ett retentionssamtal denna vecka — en stor återförsäljare befinner sig i kritisk risk.',
+    no: 'Hastetiltak: eskaler til en senior account manager og planlegg en retensjonssamtale denne uken — en stor forhandler er i kritisk risiko.',
+    da: 'Akut handling: eskalér til en senior account manager og planlæg et fastholdelsesopkald i denne uge — en stor forhandler er i kritisk risiko.',
+    fi: 'Kiireellinen toimenpide: eskaloi asia vanhemmalle asiakasvastaavalle ja sovi säilyttämispuhelu tällä viikolla — suuri jälleenmyyjä on kriittisessä riskissä.',
   },
   retentionImmediate: {
     pt: 'Contacte de imediato para definir um plano de retenção; confirme com o reseller o motivo da não renovação.',
@@ -616,6 +658,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: 'Contattare immediatamente per definire un piano di retention; confermare con il reseller il motivo del mancato rinnovo.',
     nl: 'Neem onmiddellijk contact op voor een retentieplan; bevestig met de reseller de reden voor het niet verlengen.',
     pl: 'Skontaktuj się natychmiast, aby ustalić plan retencji; potwierdź z resellerem powód braku odnowienia.',
+    cs: 'Okamžitě kontaktujte reseller kvůli plánu retence; potvrďte s ním důvod neobnovení.',
+    ro: 'Contactați imediat pentru un plan de retenție; confirmați cu resellerul motivul neînnoirii.',
+    sv: 'Kontakta omedelbart för en retentionsplan; bekräfta orsaken till den uteblivna förnyelsen med återförsäljaren.',
+    no: 'Ta kontakt umiddelbart for en retensjonsplan; bekreft årsaken til manglende fornyelse med forhandleren.',
+    da: 'Kontakt straks for at lave en fastholdelsesplan; bekræft årsagen til den manglende fornyelse med forhandleren.',
+    fi: 'Ota välittömästi yhteyttä säilyttämissuunnitelman laatimiseksi; vahvista jälleenmyyjältä syy uusimatta jättämiseen.',
   },
   dualOpportunity: {
     pt: 'Oportunidade dupla: aborde o risco de renovação e apresente o upgrade na mesma reunião com o reseller.',
@@ -625,6 +673,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: "Doppia opportunità: affrontare il rischio di rinnovo e proporre l'upgrade nello stesso incontro con il reseller.",
     nl: 'Dubbele kans: bespreek het verlengingsrisico en presenteer de upgrade tijdens hetzelfde gesprek met de reseller.',
     pl: "Podwójna szansa: omów ryzyko odnowienia i przedstaw propozycję upgrade'u podczas tego samego spotkania z resellerem.",
+    cs: 'Dvojitá příležitost: řešte riziko obnovení a nabídněte upgrade na stejné schůzce s resellerem.',
+    ro: 'Oportunitate dublă: abordați riscul de reînnoire și prezentați upgrade-ul în aceeași întâlnire cu resellerul.',
+    sv: 'Dubbel möjlighet: hantera förnyelserisken och presentera uppgraderingen på samma möte med återförsäljaren.',
+    no: 'Dobbel mulighet: ta tak i fornyelsesrisikoen og presenter oppgraderingen i det samme møtet med forhandleren.',
+    da: 'Dobbelt mulighed: adressér fornyelsesrisikoen og præsentér opgraderingen på det samme møde med forhandleren.',
+    fi: 'Kaksinkertainen mahdollisuus: käsittele uusimisriski ja esittele päivitys samassa tapaamisessa jälleenmyyjän kanssa.',
   },
   accountReview: {
     pt: 'Agende uma revisão de conta para perceber as causas da quebra na renovação antes do próximo ciclo.',
@@ -634,6 +688,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: "Pianificare una revisione dell'account per comprendere le cause del calo dei rinnovi prima del prossimo ciclo.",
     nl: 'Plan een accountreview om de oorzaken van de terugval in verlenging te begrijpen vóór de volgende cyclus.',
     pl: 'Zaplanuj przegląd konta, aby zrozumieć przyczyny spadku odnowień przed kolejnym cyklem.',
+    cs: 'Naplánujte revizi účtu, abyste pochopili příčiny poklesu obnovení před dalším cyklem.',
+    ro: 'Programați o revizuire a contului pentru a înțelege cauzele scăderii reînnoirii înainte de următorul ciclu.',
+    sv: 'Boka en kontogenomgång för att förstå orsakerna till det sjunkande förnyelsetalet innan nästa cykel.',
+    no: 'Planlegg en kontogjennomgang for å forstå årsakene til fornyelsesnedgangen før neste syklus.',
+    da: 'Planlæg en kontogennemgang for at forstå årsagerne til fornyelsesnedgangen inden næste cyklus.',
+    fi: 'Sovi tilikatselmus, jotta ymmärretään uusimisen laskun syyt ennen seuraavaa kautta.',
   },
   upsellStrongGrowth: {
     pt: 'Momento ideal para uma proposta de upsell — agende uma demonstração do produto de nível superior enquanto o crescimento está forte.',
@@ -643,6 +703,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: 'Momento ideale per una proposta di upsell — pianificare una demo del prodotto di livello superiore mentre la crescita è forte.',
     nl: 'Ideaal moment voor een upsell-voorstel — plan een demo van het hogere productniveau terwijl de groei sterk is.',
     pl: 'Idealny moment na propozycję upsellu — zaplanuj demonstrację produktu wyższego poziomu, dopóki wzrost jest silny.',
+    cs: 'Ideální okamžik pro nabídku upsellu — naplánujte demo produktu vyšší úrovně, dokud je růst silný.',
+    ro: 'Moment ideal pentru o propunere de upsell — programați o demonstrație a produsului de nivel superior cât timp creșterea este puternică.',
+    sv: 'Idealiskt tillfälle för ett upsell-erbjudande — boka en demo av produkten på högre nivå medan tillväxten är stark.',
+    no: 'Ideelt tidspunkt for et upsell-tilbud — planlegg en demo av produktet på høyere nivå mens veksten er sterk.',
+    da: 'Ideelt tidspunkt for et upsell-tilbud — planlæg en demo af produktet på højere niveau, mens væksten er stærk.',
+    fi: 'Ihanteellinen hetki lisämyyntitarjoukselle — sovi ylemmän tason tuotteen esittely, kun kasvu on vahvaa.',
   },
   upsellProposal: {
     pt: 'Prepare uma proposta comercial de upgrade e envie um business case dedicado ao reseller.',
@@ -652,6 +718,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: 'Preparare una proposta commerciale di upgrade e inviare un business case dedicato al reseller.',
     nl: 'Stel een commercieel upgradevoorstel op en stuur een specifieke business case naar de reseller.',
     pl: "Przygotuj komercyjną propozycję upgrade'u i wyślij dedykowany business case do resellera.",
+    cs: 'Připravte komerční nabídku upgradu a pošlete resellerovi samostatný business case.',
+    ro: 'Pregătiți o propunere comercială de upgrade și trimiteți un business case dedicat resellerului.',
+    sv: 'Ta fram ett kommersiellt uppgraderingsförslag och skicka ett dedikerat business case till återförsäljaren.',
+    no: 'Utarbeid et kommersielt oppgraderingsforslag og send en dedikert business case til forhandleren.',
+    da: 'Udarbejd et kommercielt opgraderingsforslag og send en dedikeret business case til forhandleren.',
+    fi: 'Laadi kaupallinen päivitysehdotus ja lähetä jälleenmyyjälle oma business case.',
   },
   autoRenewPromote: {
     pt: 'Promova a ativação do auto-renew junto do reseller para reduzir o risco futuro de churn passivo.',
@@ -661,6 +733,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: "Promuovere l'attivazione del rinnovo automatico con il reseller per ridurre il rischio futuro di abbandono passivo.",
     nl: 'Stimuleer de activering van automatisch verlengen bij de reseller om toekomstig passief verloop te verminderen.',
     pl: 'Zachęć resellera do aktywacji automatycznego odnawiania, aby zmniejszyć przyszłe ryzyko biernej rezygnacji.',
+    cs: 'Podpořte aktivaci automatického obnovení u resellera, abyste snížili budoucí riziko pasivního odchodu.',
+    ro: 'Promovați activarea reînnoirii automate cu resellerul pentru a reduce riscul viitor de pierdere pasivă.',
+    sv: 'Uppmuntra aktivering av automatisk förnyelse hos återförsäljaren för att minska framtida risk för passivt bortfall.',
+    no: 'Fremme aktivering av automatisk fornyelse hos forhandleren for å redusere fremtidig risiko for passivt frafall.',
+    da: 'Fremme aktivering af automatisk fornyelse hos forhandleren for at reducere fremtidig risiko for passivt frafald.',
+    fi: 'Kannusta jälleenmyyjää aktivoimaan automaattinen uusiminen, jotta tulevaisuuden passiivinen asiakaspoistuma vähenee.',
   },
   investigateGrowthSlowdown: {
     pt: 'Investigue as causas do abrandamento do crescimento apesar de uma taxa de renovação saudável.',
@@ -670,6 +748,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: 'Indagare le cause del rallentamento della crescita nonostante un tasso di rinnovo sano.',
     nl: 'Onderzoek de oorzaken van de groeivertraging ondanks een gezond verlengingspercentage.',
     pl: 'Zbadaj przyczyny spowolnienia wzrostu mimo zdrowego wskaźnika odnowień.',
+    cs: 'Prozkoumejte příčiny zpomalení růstu i přes zdravou míru obnovení.',
+    ro: 'Investigați cauzele încetinirii creșterii în ciuda unei rate de reînnoire sănătoase.',
+    sv: 'Undersök orsakerna till den avtagande tillväxten trots en sund förnyelsegrad.',
+    no: 'Undersøk årsakene til den avtagende veksten til tross for en sunn fornyelsesrate.',
+    da: 'Undersøg årsagerne til den aftagende vækst på trods af en sund fornyelsesrate.',
+    fi: 'Selvitä kasvun hidastumisen syyt terveestä uusimisasteesta huolimatta.',
   },
   emergingInvestment: {
     pt: 'Reseller emergente com crescimento forte — considere investimento adicional na parceria.',
@@ -679,6 +763,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: 'Reseller emergente con forte crescita — valutare un investimento aggiuntivo nella partnership.',
     nl: 'Opkomende reseller met sterke groei — overweeg extra investering in het partnerschap.',
     pl: 'Rozwijający się reseller z silnym wzrostem — rozważ dodatkową inwestycję w partnerstwo.',
+    cs: 'Rostoucí reseller se silným růstem — zvažte další investici do partnerství.',
+    ro: 'Reseller emergent cu creștere puternică — luați în considerare o investiție suplimentară în parteneriat.',
+    sv: 'Framväxande återförsäljare med stark tillväxt — överväg ytterligare investering i partnerskapet.',
+    no: 'Fremvoksende forhandler med sterk vekst — vurder ytterligere investering i partnerskapet.',
+    da: 'Fremadstormende forhandler med stærk vækst — overvej yderligere investering i partnerskabet.',
+    fi: 'Nouseva jälleenmyyjä, jolla on vahva kasvu — harkitse lisäinvestointia kumppanuuteen.',
   },
   regularMonitoring: {
     pt: 'Mantenha o acompanhamento regular; não foi identificada nenhuma ação urgente neste momento.',
@@ -688,6 +778,12 @@ const NEXT_ACTION_TRANSLATIONS = {
     it: 'Mantenere il monitoraggio regolare; nessuna azione urgente identificata al momento.',
     nl: 'Blijf regelmatig monitoren; op dit moment is geen dringende actie nodig.',
     pl: 'Kontynuuj regularne monitorowanie; obecnie nie zidentyfikowano pilnych działań.',
+    cs: 'Pokračujte v pravidelném sledování; v tuto chvíli nebyla identifikována žádná naléhavá akce.',
+    ro: 'Continuați monitorizarea regulată; nu a fost identificată nicio acțiune urgentă în acest moment.',
+    sv: 'Fortsätt med regelbunden uppföljning; ingen brådskande åtgärd har identifierats för närvarande.',
+    no: 'Fortsett med jevnlig oppfølging; ingen hastetiltak er identifisert på nåværende tidspunkt.',
+    da: 'Fortsæt med regelmæssig opfølgning; ingen akut handling er identificeret på nuværende tidspunkt.',
+    fi: 'Jatka säännöllistä seurantaa; kiireellisiä toimenpiteitä ei ole tällä hetkellä tunnistettu.',
   },
 };
 
@@ -1197,6 +1293,348 @@ const EMAIL_PHRASES = {
     qbrOverall: (priorityLabel, nextAction) => `Ogólnie sklasyfikowałbym to konto jako priorytet ${priorityLabel} w tym kwartale. ${nextAction}`,
     qbrClosing: 'Daj znać, jaki termin pasuje na 30-minutowy przegląd — przygotuję pełne zestawienie.',
   },
+  cs: {
+    contactPlaceholder: '[Jméno kontaktu]',
+    greeting: (contact) => `Dobrý den ${contact},`,
+    signoff: 'S pozdravem,',
+    yourName: '[Vaše jméno]',
+    accountFallback: 'účet',
+
+    retentionSubject: (quarter) => `Aktualizace obnovení — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} obnoveno, ${notRenewed} neobnoveno z celkových ${total} smluv)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Míra obnovení pro ${name}` : 'Míra obnovení';
+      return `${subj} v ${quarter} je ${pct}${detail}${bad ? ', což je pod naším cílem.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'rozložené poměrně rovnoměrně napříč hodnotovými pásmy, včetně vašich nejhodnotnějších účtů',
+      high: 'soustředěné na vaše nejhodnotnější účty (10 000 $ a více)',
+      low: 'soustředěné na vaše menší účty (pod 5 000 $)',
+    },
+    valueRangeSentence: (text) => `Ztráty při obnovení vypadají jako ${text} — stojí za to se blíže podívat, co tento segment ovlivňuje.`,
+    clmInactiveSentence: 'Také jsem si všiml(a), že sledování CLM není u tohoto účtu ještě aktivní — jeho aktivace by nám oběma dala lepší přehled o nadcházejících termínech obnovení a snížila počet překvapení na poslední chvíli.',
+    autoRenewSentence: (pct, bench) => `Automatické obnovení je aktuálně na ${pct}% oproti benchmarku ${bench}% — jeho aktivace u více smluv by do budoucích čtvrtletí eliminovala riziko pasivního odchodu.`,
+    retentionProposal: (nextAction) => `Navrhuji následující: 20minutový hovor tento týden, abychom prošli ohrožené účty, potvrdili důvody případných neobnovení a domluvili konkrétní plán retence před začátkem dalšího cyklu. ${nextAction}`,
+    retentionClosing: 'Jak vypadá váš kalendář ve středu nebo ve čtvrtek?',
+
+    growthSubject: (quarter) => `Příležitost k růstu — ${quarter}`,
+    growthBitArr: (x) => `ARR vzrostlo o ${x}%`,
+    growthBitSales: (x) => `tržby meziročně vzrostly o ${x}%`,
+    growthBitLicenses: (x) => `počet licencí vzrostl o ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Čísla ${name}` : 'Tato čísla';
+      return `${subj} za ${quarter} ukazují skutečnou dynamiku${detail} — gratuluji, byl to silný kvartál.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Čísla ${name}` : 'Tato čísla';
+      return `${subj} za ${quarter}${detail} jsou výchozím bodem tohoto rozhovoru.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Při kontrole účtu jsem našel(a) konkrétní příležitost k upgradu: ${count} ${unit} způsobilých pro ${label}.`,
+    upsellFoundSentence2: 'Při aktuálních objemech jde o významnou příležitost k rozšíření pro obě strany — rád(a) připravím čísla, abyste viděli přesný dopad na váš portfolio.',
+    upsellNotFoundSentence: 'Zatím jsem na účtu nezaznamenal(a) žádný objem způsobilý pro upsell — stojí za to společně provést rychlý audit, protože účty s tímto růstovým profilem obvykle mají prostor pro upgrade někde v mixu licencí.',
+    growthNextStep: (nextAction) => `Další krok z mé strany: ${nextAction}`,
+    growthClosing: 'Můžeme si na to vyhradit 30 minut na pracovní schůzku — rád(a) přinesu předběžný návrh?',
+
+    qbrSubject: (quarter) => `Obchodní přehled — ${quarter}`,
+    qbrIntro: (name, quarter) => `Před naším čtvrtletním setkáním zde máte rychlý přehled toho, jak si ${name} stojí na základě čísel za ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Míra obnovení: ${pct}% (riziko ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Tržby, posledních 12 měsíců: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (oproti ${prior} v předchozím období)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Růst: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (tržby +${pct}% meziročně)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automatické obnovení: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Příležitost k upgradu: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} způsobilých pro ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Velikost účtu: ${pct}% obchodu v dané zemi`,
+    qbrOverall: (priorityLabel, nextAction) => `Celkově bych toto čtvrtletí hodnotil(a) tento účet jako prioritu ${priorityLabel}. ${nextAction}`,
+    qbrClosing: 'Dejte mi vědět, jaký termín vám vyhovuje na 30minutovou revizi — přinesu kompletní rozbor.',
+  },
+  ro: {
+    contactPlaceholder: '[Numele Contactului]',
+    greeting: (contact) => `Bună ${contact},`,
+    signoff: 'Cu stimă,',
+    yourName: '[Numele dumneavoastră]',
+    accountFallback: 'contul',
+
+    retentionSubject: (quarter) => `Actualizare privind reînnoirea — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} reînnoite, ${notRenewed} neînnoite dintr-un total de ${total} contracte)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Rata de reînnoire pentru ${name}` : 'Rata de reînnoire';
+      return `${subj} în ${quarter} este de ${pct}${detail}${bad ? ', ceea ce este sub nivelul dorit.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'distribuite destul de uniform pe intervalele de valoare, inclusiv conturile dvs. cu cea mai mare valoare',
+      high: 'concentrate pe conturile dvs. cu valoare mare (10.000 $ sau mai mult)',
+      low: 'concentrate pe conturile dvs. mai mici (sub 5.000 $)',
+    },
+    valueRangeSentence: (text) => `Pierderile de reînnoire par a fi ${text} — merită să analizăm mai atent ce cauzează acest lucru în acel segment.`,
+    clmInactiveSentence: 'Am observat, de asemenea, că monitorizarea CLM nu este încă activă pe acest cont — activarea ei ne-ar oferi amândurora o vizibilitate mai bună asupra următoarelor date de reînnoire și ar reduce surprizele de ultim moment.',
+    autoRenewSentence: (pct, bench) => `Reînnoirea automată este în prezent la ${pct}%, față de un benchmark de ${bench}% — activarea ei pe mai multe contracte ar elimina riscul de pierdere pasivă pentru trimestrele viitoare.`,
+    retentionProposal: (nextAction) => `Iată ce propun: un apel de 20 de minute săptămâna aceasta pentru a trece în revistă conturile cu risc, a confirma motivele eventualelor neînnoiri și a stabili un plan concret de retenție înainte de începerea ciclului următor. ${nextAction}`,
+    retentionClosing: 'Cum arată agenda dumneavoastră miercuri sau joi?',
+
+    growthSubject: (quarter) => `Oportunitate de creștere — ${quarter}`,
+    growthBitArr: (x) => `ARR în creștere cu ${x}%`,
+    growthBitSales: (x) => `vânzări în creștere cu ${x}% față de anul trecut`,
+    growthBitLicenses: (x) => `licențe în creștere cu ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Cifrele ${name}` : 'Aceste cifre';
+      return `${subj} pentru ${quarter} arată un impuls real${detail} — felicitări, a fost un trimestru solid.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Cifrele ${name}` : 'Aceste cifre';
+      return `${subj} pentru ${quarter}${detail} sunt punctul de plecare al acestei discuții.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `În timp ce am examinat contul, am identificat o oportunitate concretă de upgrade: ${count} ${unit} eligibile pentru ${label}.`,
+    upsellFoundSentence2: 'La volumele actuale, aceasta este o oportunitate de extindere semnificativă pentru ambele părți — pot pregăti cu plăcere cifrele pentru a vedea impactul exact asupra portofoliului dumneavoastră.',
+    upsellNotFoundSentence: 'Nu am observat încă volum eligibil pentru upsell semnalat pe cont — merită să facem împreună un audit rapid, deoarece conturile cu acest profil de creștere au de obicei spațiu de upgrade undeva în mixul de licențe.',
+    growthNextStep: (nextAction) => `Următorul pas din partea mea: ${nextAction}`,
+    growthClosing: 'Putem rezerva 30 de minute pentru o sesiune de lucru pe acest subiect — pot aduce cu plăcere o propunere preliminară?',
+
+    qbrSubject: (quarter) => `Revizuire de business — ${quarter}`,
+    qbrIntro: (name, quarter) => `Înainte de întâlnirea noastră trimestrială, iată un rezumat rapid al situației ${name} pe baza cifrelor din ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Rata de reînnoire: ${pct}% (risc ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Vânzări, ultimele 12 luni: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (față de ${prior} în perioada anterioară)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Creștere: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (vânzări +${pct}% față de anul trecut)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Reînnoire automată: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Oportunitate de upgrade: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} eligibile pentru ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Dimensiunea contului: ${pct}% din activitatea din țară`,
+    qbrOverall: (priorityLabel, nextAction) => `În ansamblu, aș clasifica acest cont ca prioritate ${priorityLabel} în acest trimestru. ${nextAction}`,
+    qbrClosing: 'Anunțați-mă ce interval vă convine pentru o revizuire de 30 de minute — voi aduce analiza completă.',
+  },
+  sv: {
+    contactPlaceholder: '[Kontaktens namn]',
+    greeting: (contact) => `Hej ${contact},`,
+    signoff: 'Vänliga hälsningar,',
+    yourName: '[Ditt namn]',
+    accountFallback: 'kontot',
+
+    retentionSubject: (quarter) => `Uppdatering om förnyelse — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} förnyade, ${notRenewed} ej förnyade av totalt ${total} avtal)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Förnyelsegraden för ${name}` : 'Förnyelsegraden';
+      return `${subj} ligger under ${quarter} på ${pct}${detail}${bad ? ', vilket är lägre än vi skulle vilja.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'ganska jämnt fördelade över värdeintervallen, inklusive era mest värdefulla konton',
+      high: 'koncentrerade till era mest värdefulla konton ($10k+)',
+      low: 'koncentrerade till era mindre konton (under $5k)',
+    },
+    valueRangeSentence: (text) => `Förnyelseförlusterna verkar vara ${text} — det är värt att titta närmare på vad som driver detta i det segmentet.`,
+    clmInactiveSentence: 'Jag noterade också att CLM-spårning ännu inte är aktiverad på kontot — att aktivera det skulle ge oss båda bättre insyn i kommande förnyelsedatum och minska överraskningar i sista minuten.',
+    autoRenewSentence: (pct, bench) => `Automatisk förnyelse ligger just nu på ${pct}%, jämfört med ett benchmark på ${bench}% — att aktivera det på fler avtal skulle eliminera risken för passivt bortfall kommande kvartal.`,
+    retentionProposal: (nextAction) => `Här är vad jag föreslår: ett 20-minuters samtal den här veckan för att gå igenom de riskutsatta kontona, bekräfta orsakerna till eventuella uteblivna förnyelser och komma överens om en konkret räddningsplan innan nästa cykel börjar. ${nextAction}`,
+    retentionClosing: 'Hur ser din kalender ut på onsdag eller torsdag?',
+
+    growthSubject: (quarter) => `Tillväxtmöjlighet — ${quarter}`,
+    growthBitArr: (x) => `ARR upp ${x}%`,
+    growthBitSales: (x) => `försäljning upp ${x}% jämfört med föregående år`,
+    growthBitLicenses: (x) => `licenser upp ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `${name}s siffror` : 'Dessa siffror';
+      return `${subj} för ${quarter} visar verklig fart${detail} — grattis, det var ett starkt kvartal.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `${name}s siffror` : 'Dessa siffror';
+      return `${subj} för ${quarter}${detail} är utgångspunkten för det här samtalet.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `När jag gick igenom kontot hittade jag en konkret uppgraderingsmöjlighet: ${count} ${unit} berättigade till ${label}.`,
+    upsellFoundSentence2: 'Vid nuvarande volymer är detta en meningsfull expansionsmöjlighet för båda parter — jag tar gärna fram siffror så att du kan se den exakta effekten på ditt bestånd.',
+    upsellNotFoundSentence: 'Jag har ännu inte sett någon upsell-berättigad volym flaggad på kontot — det är värt att göra en snabb genomgång tillsammans, eftersom konton med den här tillväxtprofilen brukar ha uppgraderingsutrymme någonstans i licensmixen.',
+    growthNextStep: (nextAction) => `Nästa steg från min sida: ${nextAction}`,
+    growthClosing: 'Kan vi boka 30 minuter för en arbetssession om detta — jag tar gärna med ett utkast till förslag?',
+
+    qbrSubject: (quarter) => `Affärsgenomgång — ${quarter}`,
+    qbrIntro: (name, quarter) => `Inför vår kvartalsgenomgång, här är en snabb sammanfattning av var ${name} står baserat på siffrorna för ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Förnyelsegrad: ${pct}% (${riskLabel} risk)`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Försäljning, senaste 12 månaderna: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (jämfört med ${prior} föregående period)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Tillväxt: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (försäljning +${pct}% jämfört med föregående år)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automatisk förnyelse: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Uppgraderingsmöjlighet: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} berättigade till ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Kontostorlek: ${pct}% av affärerna i landet`,
+    qbrOverall: (priorityLabel, nextAction) => `Sammantaget skulle jag flagga det här kontot som ${priorityLabel} prioritet det här kvartalet. ${nextAction}`,
+    qbrClosing: 'Säg till vilken tid som passar för en 30-minuters genomgång — jag tar med hela nedbrytningen.',
+  },
+  no: {
+    contactPlaceholder: '[Kontaktens navn]',
+    greeting: (contact) => `Hei ${contact},`,
+    signoff: 'Med vennlig hilsen,',
+    yourName: '[Ditt navn]',
+    accountFallback: 'kontoen',
+
+    retentionSubject: (quarter) => `Oppdatering om fornyelse — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} fornyet, ${notRenewed} ikke fornyet av totalt ${total} avtaler)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Fornyelsesraten for ${name}` : 'Fornyelsesraten';
+      return `${subj} ligger i ${quarter} på ${pct}${detail}${bad ? ', noe som er lavere enn ønsket.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'fordelt ganske jevnt over verdisegmentene, inkludert dine mest verdifulle kontoer',
+      high: 'konsentrert til dine mest verdifulle kontoer ($10k+)',
+      low: 'konsentrert til dine mindre kontoer (under $5k)',
+    },
+    valueRangeSentence: (text) => `Fornyelsestapene ser ut til å være ${text} — det er verdt å se nærmere på hva som driver dette i det segmentet.`,
+    clmInactiveSentence: 'Jeg la også merke til at CLM-sporing ennå ikke er aktivert på kontoen — å aktivere det ville gitt oss begge bedre innsikt i kommende fornyelsesdatoer og redusert overraskelser i siste liten.',
+    autoRenewSentence: (pct, bench) => `Automatisk fornyelse ligger for øyeblikket på ${pct}%, mot en benchmark på ${bench}% — å aktivere det på flere avtaler ville eliminert risikoen for passivt frafall for kommende kvartaler.`,
+    retentionProposal: (nextAction) => `Her er hva jeg foreslår: en 20-minutters samtale denne uken for å gå gjennom kontoene med risiko, bekrefte årsakene til eventuelle manglende fornyelser, og bli enige om en konkret redningsplan før neste syklus starter. ${nextAction}`,
+    retentionClosing: 'Hvordan ser kalenderen din ut på onsdag eller torsdag?',
+
+    growthSubject: (quarter) => `Vekstmulighet — ${quarter}`,
+    growthBitArr: (x) => `ARR opp ${x}%`,
+    growthBitSales: (x) => `salg opp ${x}% sammenlignet med året før`,
+    growthBitLicenses: (x) => `lisenser opp ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `Tallene til ${name}` : 'Disse tallene';
+      return `${subj} for ${quarter} viser reell fremdrift${detail} — gratulerer, det var et sterkt kvartal.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `Tallene til ${name}` : 'Disse tallene';
+      return `${subj} for ${quarter}${detail} er utgangspunktet for denne samtalen.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Da jeg gikk gjennom kontoen fant jeg en konkret oppgraderingsmulighet: ${count} ${unit} kvalifisert for ${label}.`,
+    upsellFoundSentence2: 'Ved dagens volumer er dette en meningsfull ekspansjonsmulighet for begge parter — jeg setter gjerne sammen tall slik at du kan se den nøyaktige effekten på porteføljen din.',
+    upsellNotFoundSentence: 'Jeg har ennå ikke sett noe upsell-kvalifisert volum flagget på kontoen — det er verdt å gjøre en rask revisjon sammen, siden kontoer med denne vekstprofilen som regel har oppgraderingsrom et sted i lisensmiksen.',
+    growthNextStep: (nextAction) => `Neste steg fra min side: ${nextAction}`,
+    growthClosing: 'Kan vi sette av 30 minutter til en arbeidsøkt om dette — jeg tar gjerne med et utkast til forslag?',
+
+    qbrSubject: (quarter) => `Forretningsgjennomgang — ${quarter}`,
+    qbrIntro: (name, quarter) => `Foran vår kvartalsgjennomgang, her er en rask oppsummering av hvor ${name} står basert på tallene for ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Fornyelsesrate: ${pct}% (${riskLabel} risiko)`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Salg, siste 12 måneder: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (mot ${prior} i forrige periode)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Vekst: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (salg +${pct}% sammenlignet med året før)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automatisk fornyelse: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Oppgraderingsmulighet: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} kvalifisert for ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Kontostørrelse: ${pct}% av virksomheten i landet`,
+    qbrOverall: (priorityLabel, nextAction) => `Samlet sett vil jeg vurdere denne kontoen som ${priorityLabel} prioritet dette kvartalet. ${nextAction}`,
+    qbrClosing: 'Si gjerne fra om et tidspunkt som passer for en 30-minutters gjennomgang — jeg tar med hele oversikten.',
+  },
+  da: {
+    contactPlaceholder: '[Kontaktpersonens navn]',
+    greeting: (contact) => `Hej ${contact},`,
+    signoff: 'Med venlig hilsen,',
+    yourName: '[Dit navn]',
+    accountFallback: 'kontoen',
+
+    retentionSubject: (quarter) => `Opdatering om fornyelse — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} fornyet, ${notRenewed} ikke fornyet ud af i alt ${total} aftaler)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `Fornyelsesraten for ${name}` : 'Fornyelsesraten';
+      return `${subj} ligger i ${quarter} på ${pct}${detail}${bad ? ', hvilket er lavere end ønsket.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'fordelt nogenlunde jævnt over værdisegmenterne, inklusive dine mest værdifulde konti',
+      high: 'koncentreret om dine mest værdifulde konti ($10k+)',
+      low: 'koncentreret om dine mindre konti (under $5k)',
+    },
+    valueRangeSentence: (text) => `Fornyelsestabene ser ud til at være ${text} — det er værd at kigge nærmere på, hvad der driver dette i det segment.`,
+    clmInactiveSentence: 'Jeg bemærkede også, at CLM-sporing endnu ikke er aktiveret på kontoen — at aktivere det ville give os begge bedre indsigt i kommende fornyelsesdatoer og reducere overraskelser i sidste øjeblik.',
+    autoRenewSentence: (pct, bench) => `Automatisk fornyelse ligger i øjeblikket på ${pct}%, mod et benchmark på ${bench}% — at aktivere det på flere aftaler ville fjerne risikoen for passivt frafald i kommende kvartaler.`,
+    retentionProposal: (nextAction) => `Her er, hvad jeg foreslår: et 20-minutters opkald i denne uge for at gennemgå de risikofyldte konti, bekræfte årsagerne til eventuelle manglende fornyelser og aftale en konkret redningsplan, før næste cyklus starter. ${nextAction}`,
+    retentionClosing: 'Hvordan ser din kalender ud på onsdag eller torsdag?',
+
+    growthSubject: (quarter) => `Vækstmulighed — ${quarter}`,
+    growthBitArr: (x) => `ARR op ${x}%`,
+    growthBitSales: (x) => `salg op ${x}% år-til-år`,
+    growthBitLicenses: (x) => `licenser op ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `${name}s tal` : 'Disse tal';
+      return `${subj} for ${quarter} viser reel fremdrift${detail} — tillykke, det var et stærkt kvartal.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `${name}s tal` : 'Disse tal';
+      return `${subj} for ${quarter}${detail} er udgangspunktet for denne samtale.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Da jeg gennemgik kontoen, fandt jeg en konkret opgraderingsmulighed: ${count} ${unit} berettiget til ${label}.`,
+    upsellFoundSentence2: 'Ved de nuværende volumener er dette en meningsfuld udvidelsesmulighed for begge parter — jeg samler gerne tal, så du kan se den præcise effekt på din portefølje.',
+    upsellNotFoundSentence: 'Jeg har endnu ikke set noget upsell-berettiget volumen markeret på kontoen — det er værd at lave et hurtigt tjek sammen, da konti med denne vækstprofil normalt har opgraderingsrum et sted i licensmikset.',
+    growthNextStep: (nextAction) => `Næste skridt fra min side: ${nextAction}`,
+    growthClosing: 'Kan vi sætte 30 minutter af til en arbejdssession om dette — jeg tager gerne et udkast til forslag med?',
+
+    qbrSubject: (quarter) => `Forretningsgennemgang — ${quarter}`,
+    qbrIntro: (name, quarter) => `Forud for vores kvartalsgennemgang, her er en hurtig opsummering af, hvor ${name} står baseret på tallene for ${quarter}:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Fornyelsesrate: ${pct}% (${riskLabel} risiko)`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Salg, seneste 12 måneder: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (mod ${prior} i forrige periode)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Vækst: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (salg +${pct}% år-til-år)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automatisk fornyelse: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Opgraderingsmulighed: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} berettiget til ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Kontostørrelse: ${pct}% af forretningen i landet`,
+    qbrOverall: (priorityLabel, nextAction) => `Samlet set vil jeg markere denne konto som ${priorityLabel} prioritet dette kvartal. ${nextAction}`,
+    qbrClosing: 'Sig til, hvilket tidspunkt der passer til en 30-minutters gennemgang — jeg tager hele opdelingen med.',
+  },
+  fi: {
+    contactPlaceholder: '[Yhteyshenkilön nimi]',
+    greeting: (contact) => `Hei ${contact},`,
+    signoff: 'Ystävällisin terveisin,',
+    yourName: '[Nimesi]',
+    accountFallback: 'tili',
+
+    retentionSubject: (quarter) => `Päivitys uusimisesta — ${quarter}`,
+    renewalDetail: (renewed, notRenewed, total) => ` (${renewed} uusittu, ${notRenewed} ei uusittu, yhteensä ${total} sopimusta)`,
+    renewalRateSentence: (name, quarter, pct, detail, bad) => {
+      const subj = name ? `${name}n uusimisaste` : 'Uusimisaste';
+      return `${subj} on ${quarter} ${pct}${detail}${bad ? ', mikä on toivottua alempi.' : '.'}`;
+    },
+    valueRangeRiskPhrase: {
+      systemic: 'jakautuneet melko tasaisesti eri arvoluokkiin, myös arvokkaimpiin tileihinne',
+      high: 'keskittyneet arvokkaimpiin tileihinne (10 000 $ tai enemmän)',
+      low: 'keskittyneet pienempiin tileihinne (alle 5 000 $)',
+    },
+    valueRangeSentence: (text) => `Uusimistappiot vaikuttavat olevan ${text} — kannattaa tarkastella lähemmin, mikä tätä segmenttiä ajaa.`,
+    clmInactiveSentence: 'Huomasin myös, että CLM-seuranta ei ole vielä aktiivinen tällä tilillä — sen käyttöönotto antaisi meille molemmille paremman näkyvyyden tuleviin uusimispäiviin ja vähentäisi viime hetken yllätyksiä.',
+    autoRenewSentence: (pct, bench) => `Automaattinen uusiminen on tällä hetkellä ${pct}%, kun vertailuarvo on ${bench}% — sen käyttöönotto useammissa sopimuksissa poistaisi passiivisen asiakaspoistuman riskin tulevilta vuosineljänneksiltä.`,
+    retentionProposal: (nextAction) => `Ehdotan seuraavaa: 20 minuutin puhelu tällä viikolla, jossa käymme läpi riskialttiit tilit, vahvistamme mahdollisten uusimatta jättämisten syyt ja sovimme konkreettisesta säilyttämissuunnitelmasta ennen seuraavan kauden alkua. ${nextAction}`,
+    retentionClosing: 'Miltä kalenterisi näyttää keskiviikkona tai torstaina?',
+
+    growthSubject: (quarter) => `Kasvumahdollisuus — ${quarter}`,
+    growthBitArr: (x) => `ARR nousi ${x}%`,
+    growthBitSales: (x) => `myynti nousi ${x}% vuoden takaisesta`,
+    growthBitLicenses: (x) => `lisenssien määrä nousi ${x}%`,
+    growthStrongSentence: (name, quarter, detail) => {
+      const subj = name ? `${name}n luvut` : 'Nämä luvut';
+      return `${subj} ${quarter} osoittavat todellista vauhtia${detail} — onnittelut, se oli vahva vuosineljännes.`;
+    },
+    growthWeakSentence: (name, quarter, detail) => {
+      const subj = name ? `${name}n luvut` : 'Nämä luvut';
+      return `${subj} ${quarter}${detail} ovat tämän keskustelun lähtökohta.`;
+    },
+    upsellFoundSentence1: (count, unit, label) => `Tiliä tarkastellessani löysin konkreettisen päivitysmahdollisuuden: ${count} ${unit} kelpoisia kohteeseen ${label}.`,
+    upsellFoundSentence2: 'Nykyisillä volyymeilla tämä on merkittävä laajentumismahdollisuus molemmille osapuolille — valmistelen mielelläni luvut, jotta näet tarkan vaikutuksen salkkuusi.',
+    upsellNotFoundSentence: 'En ole vielä havainnut tilillä merkittyä lisämyyntikelpoista volyymia — kannattaa tehdä yhdessä nopea tarkistus, sillä tällaisen kasvuprofiilin tileillä on yleensä päivitysvaraa jossain lisenssivalikoimassa.',
+    growthNextStep: (nextAction) => `Seuraava askel minun puoleltani: ${nextAction}`,
+    growthClosing: 'Voisimmeko varata 30 minuuttia työistuntoon tästä aiheesta — tuon mielelläni alustavan ehdotuksen?',
+
+    qbrSubject: (quarter) => `Liiketoimintakatsaus — ${quarter}`,
+    qbrIntro: (name, quarter) => `Ennen neljännesvuosikatsaustamme, tässä on nopea yhteenveto siitä, missä ${name} on ${quarter} lukujen perusteella:`,
+    qbrRenewalBullet: (pct, riskLabel) => `- Uusimisaste: ${pct}% (riski: ${riskLabel})`,
+    qbrSalesBullet: (cur, priorSuffix) => `- Myynti, viimeiset 12 kuukautta: ${cur}${priorSuffix}`,
+    qbrSalesPrior: (prior) => ` (vs. ${prior} edellisellä kaudella)`,
+    qbrGrowthBullet: (label, salesSuffix) => `- Kasvu: ${label}${salesSuffix}`,
+    qbrGrowthSalesSuffix: (pct) => ` (myynti +${pct}% vuoden takaisesta)`,
+    qbrAutoRenewBullet: (label, pctSuffix) => `- Automaattinen uusiminen: ${label}${pctSuffix}`,
+    qbrAutoRenewPctSuffix: (pct) => ` (${pct}%)`,
+    qbrUpsellBullet: (label, detailSuffix) => `- Päivitysmahdollisuus: ${label}${detailSuffix}`,
+    qbrUpsellDetailSuffix: (count, unit, prodLabel) => ` — ${count} ${unit} kelpoisia kohteeseen ${prodLabel}`,
+    qbrSizeBullet: (pct) => `- Tilin koko: ${pct}% maan liiketoiminnasta`,
+    qbrOverall: (priorityLabel, nextAction) => `Kokonaisuutena luokittelisin tämän tilin ${priorityLabel} prioriteetiksi tällä vuosineljänneksellä. ${nextAction}`,
+    qbrClosing: 'Ilmoita, mikä ajankohta sopii 30 minuutin katsaukselle — tuon mukanani täyden erittelyn.',
+  },
 };
 
 function composeRetentionEmail(i, m, ctx, lang) {
@@ -1656,7 +2094,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Continental Design Alliance — strategic account, upsell headroom',
     data: {
-      resellerName: 'Continental Design Alliance', contactName: 'Julia Bergstrom', resellerCountry: 'Brazil', quarter: 'Q3 2026',
+      resellerName: 'Continental Design Alliance', contactName: 'Julia Bergstrom', resellerCountry: 'Czech Republic', quarter: 'Q3 2026',
       renewalRate: 97, agreementsTotal: 90, agreementsRenewed: 88, agreementsPartial: 1, agreementsNotRenewed: 1,
       clmStatus: 'active',
       arrGrowth: 7, salesCurrent12m: 2400000, salesPrevious12m: 2250000, monthlyAverage: 200000, currentMonthExtrap: 205000,
@@ -1669,7 +2107,7 @@ const SAMPLE_RESELLERS = [
   {
     label: 'Atlas Peak Reseller — minimal data (partial form demo)',
     data: {
-      resellerName: 'Atlas Peak Reseller', resellerCountry: 'Other', quarter: 'Q3 2026',
+      resellerName: 'Atlas Peak Reseller', resellerCountry: 'Finland', quarter: 'Q3 2026',
       renewalRate: 75,
       clmStatus: 'active',
     },
