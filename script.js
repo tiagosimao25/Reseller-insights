@@ -121,16 +121,16 @@ function setResultsView(view) {
 viewToggleNumbersBtn.addEventListener('click', () => setResultsView('numbers'));
 viewToggleGraphsBtn.addEventListener('click', () => setResultsView('graphs'));
 
-// ---------- chart type toggle (Overview radar <-> Scores bars <-> By Value Range bars) ----------
+// ---------- chart type toggle (Overview radar <-> Scores bars <-> Gauges) ----------
 const chartTypeBtns = {
   radar: document.getElementById('chart-type-radar'),
   bars: document.getElementById('chart-type-bars'),
-  valuerange: document.getElementById('chart-type-valuerange'),
+  gauges: document.getElementById('chart-type-gauges'),
 };
 const chartTypeEls = {
   radar: document.getElementById('radar-chart'),
   bars: document.getElementById('bar-chart'),
-  valuerange: document.getElementById('valuerange-chart'),
+  gauges: document.getElementById('gauges-chart'),
 };
 
 function setChartType(type) {
@@ -142,7 +142,7 @@ function setChartType(type) {
 
 chartTypeBtns.radar.addEventListener('click', () => setChartType('radar'));
 chartTypeBtns.bars.addEventListener('click', () => setChartType('bars'));
-chartTypeBtns.valuerange.addEventListener('click', () => setChartType('valuerange'));
+chartTypeBtns.gauges.addEventListener('click', () => setChartType('gauges'));
 
 // ---------- wizard (one section visible at a time, "Next"/"Back" between them) ----------
 // All 7 step containers stay mounted in the DOM at all times (toggled via
@@ -1956,7 +1956,7 @@ function renderRadar(m) {
   const pt = (r, rad) => [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
 
   const svg = svgEl('svg', {
-    viewBox: '-20 -15 340 330', width: '240', height: '240', role: 'img',
+    viewBox: '-20 -15 340 330', width: '340', height: '330', role: 'img',
     'aria-label': 'Scorecard radar across all six metrics',
   });
 
@@ -2083,30 +2083,60 @@ function renderScoreBars(m) {
   renderBarChart('bar-chart', rows);
 }
 
-// "By Value Range" view: the optional per-bucket renewal-rate fields
-// (Step 2, "Renewal Rate by Value Range") are collected but never
-// visualized anywhere else in the app — this is the only place they're
-// charted. Read straight from the inputs (num()) rather than `i`/`m`,
-// since only the aggregated low/high buckets are carried into readInputs().
-const VALUE_RANGE_BUCKETS = [
-  { id: 'vr_0_1', label: '$0–1k' },
-  { id: 'vr_1_5', label: '$1–5k' },
-  { id: 'vr_5_10', label: '$5–10k' },
-  { id: 'vr_10_25', label: '$10–25k' },
-  { id: 'vr_25_50', label: '$25–50k' },
-  { id: 'vr_50_plus', label: '$50k+' },
-];
-function renderValueRangeBars() {
-  const rows = VALUE_RANGE_BUCKETS.map((b) => {
-    const v = num(b.id);
-    return {
-      label: b.label,
-      width: v,
-      display: v === null ? null : fmt(v, 1) + '%',
-      band: v === null ? { status: 'neutral' } : riskBand(v),
-    };
+// "Gauges" view: the same 6 metrics as the radar/Scores bars, one more
+// alternative read — a ring per metric, filled proportionally to its
+// 0-100 score and colored via the same band function as everywhere else.
+// Like Scores (and unlike the radar), Priority is NOT inverted here: each
+// ring carries its own number right in its center, so there's no shared
+// "shape" for one inverted axis to mislead — same reasoning as the bars.
+function renderScoreGauges(m) {
+  const rows = [
+    { label: 'Priority',   value: m.overallPriority,      display: m.overallPriority === null ? null : String(Math.round(m.overallPriority)), band: priorityBand(m.overallPriority) },
+    { label: 'Risk',       value: m.renewalHealth,        display: m.renewalHealth === null ? null : String(Math.round(m.renewalHealth)), band: riskBand(m.renewalHealth) },
+    { label: 'Growth',     value: m.growthScore,          display: m.growthScore === null ? null : String(Math.round(m.growthScore)), band: growthBand(m.growthScore) },
+    { label: 'Auto-Renew', value: m.autoRenewScore,       display: m.autoRenewScore === null ? null : String(Math.round(m.autoRenewScore)), band: autoRenewBand(m.autoRenewScore) },
+    { label: 'Upsell',     value: m.upsellScore,          display: m.upsellScore === null ? null : String(Math.round(m.upsellScore)), band: upsellBand(m.upsellScore) },
+    { label: 'Size',       value: m.sizeScoreForPriority, display: m.sizeShare === null ? null : fmt(m.sizeShare, 1) + '%', band: sizeBand(m.sizeShare) },
+  ];
+
+  const container = document.getElementById('gauges-chart');
+  container.innerHTML = '';
+
+  const r = 30, stroke = 6, cx = 36, cy = 36, circumference = 2 * Math.PI * r;
+
+  rows.forEach((row) => {
+    const cell = document.createElement('div');
+    cell.className = 'gauge-cell';
+
+    const svg = svgEl('svg', { viewBox: '0 0 72 72', width: '72', height: '72', role: 'img', 'aria-label': `${row.label}: ${row.display === null ? 'no data' : row.display}` });
+    svg.appendChild(svgEl('circle', { class: 'gauge-track', cx, cy, r, 'stroke-width': stroke }));
+
+    if (row.value !== null) {
+      const pct = Math.max(0, Math.min(100, row.value));
+      const dash = circumference * (pct / 100);
+      const fg = svgEl('circle', {
+        class: 'gauge-fill', cx, cy, r, 'stroke-width': stroke,
+        'stroke-dasharray': `${dash.toFixed(1)} ${(circumference - dash).toFixed(1)}`,
+        transform: `rotate(-90 ${cx} ${cy})`,
+      });
+      fg.style.stroke = STATUS_COLOR[row.band.status] || STATUS_COLOR.neutral;
+      svg.appendChild(fg);
+    } else {
+      svg.appendChild(svgEl('circle', { class: 'gauge-fill gauge-fill-empty', cx, cy, r, 'stroke-width': stroke }));
+    }
+
+    const text = svgEl('text', { class: 'gauge-value', x: cx, y: cy + 4, 'text-anchor': 'middle' });
+    text.textContent = row.display === null ? '—' : row.display;
+    svg.appendChild(text);
+
+    const label = document.createElement('span');
+    label.className = 'gauge-label';
+    label.textContent = row.label;
+
+    cell.appendChild(svg);
+    cell.appendChild(label);
+    container.appendChild(cell);
   });
-  renderBarChart('valuerange-chart', rows);
 }
 
 // A tile shows one metric exactly once: label, value, status badge, and a
@@ -2166,7 +2196,7 @@ function render(i, m) {
   setTrend('tile-size-trend', m.salesGrowthPct);
   renderRadar(m);
   renderScoreBars(m);
-  renderValueRangeBars();
+  renderScoreGauges(m);
 
   const list = document.getElementById('diagnostic-list');
   list.innerHTML = '';
@@ -2328,9 +2358,9 @@ form.addEventListener('reset', () => {
 
 const SAMPLE_RESELLERS = [
   {
-    label: 'Meridian Systems Group — large account, critical renewal risk',
+    label: 'Meridian Technology Partners — large account, critical renewal risk',
     data: {
-      resellerName: 'Meridian Systems Group', contactName: 'Dana Whitfield', resellerCountry: 'France', quarter: 'Q3 2026',
+      resellerName: 'Meridian Technology Partners', contactName: 'Dana Whitfield', resellerCountry: 'France', quarter: 'Q3 2026',
       renewalRate: 42, agreementsTotal: 60, agreementsRenewed: 25, agreementsPartial: 5, agreementsNotRenewed: 30,
       clmStatus: 'inactive',
       vr_0_1: 55, vr_1_5: 48, vr_5_10: 30, vr_10_25: 22, vr_25_50: 15, vr_50_plus: 10,
@@ -2342,9 +2372,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Brightline Creative Partners — strong renewal, upsell-ready',
+    label: 'Brightline Digital Distribution — strong renewal, upsell-ready',
     data: {
-      resellerName: 'Brightline Creative Partners', contactName: 'Priya Nandakumar', resellerCountry: 'Portugal', quarter: 'Q3 2026',
+      resellerName: 'Brightline Digital Distribution', contactName: 'Priya Nandakumar', resellerCountry: 'Portugal', quarter: 'Q3 2026',
       renewalRate: 96, agreementsTotal: 50, agreementsRenewed: 48, agreementsPartial: 1, agreementsNotRenewed: 1,
       clmStatus: 'active',
       vr_0_1: 97, vr_1_5: 96, vr_5_10: 95, vr_10_25: 94, vr_25_50: 93, vr_50_plus: 92,
@@ -2356,9 +2386,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Coastal Office Systems — healthy renewal, auto-renew gap',
+    label: 'Coastal IT Partners — healthy renewal, auto-renew gap',
     data: {
-      resellerName: 'Coastal Office Systems', contactName: 'Marcus Delgado', resellerCountry: 'Germany', quarter: 'Q3 2026',
+      resellerName: 'Coastal IT Partners', contactName: 'Marcus Delgado', resellerCountry: 'Germany', quarter: 'Q3 2026',
       renewalRate: 83, agreementsTotal: 70, agreementsRenewed: 58, agreementsPartial: 6, agreementsNotRenewed: 6,
       clmStatus: 'active',
       arrGrowth: 3, salesCurrent12m: 510000, salesPrevious12m: 495000, monthlyAverage: 43000, currentMonthExtrap: 42000,
@@ -2369,9 +2399,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Union & Wells Marketing — healthy renewal, growth slowing',
+    label: 'Union & Wells Technology Resellers — healthy renewal, growth slowing',
     data: {
-      resellerName: 'Union & Wells Marketing', contactName: 'Sophie Larkin', resellerCountry: 'Spain', quarter: 'Q3 2026',
+      resellerName: 'Union & Wells Technology Resellers', contactName: 'Sophie Larkin', resellerCountry: 'Spain', quarter: 'Q3 2026',
       renewalRate: 89, agreementsTotal: 45, agreementsRenewed: 40, agreementsPartial: 3, agreementsNotRenewed: 2,
       clmStatus: 'active',
       arrGrowth: -14, salesCurrent12m: 310000, salesPrevious12m: 430000, monthlyAverage: 28000, currentMonthExtrap: 24000,
@@ -2382,9 +2412,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Foundry Nine Studio — small reseller, fast growth',
+    label: 'Foundry Nine Software Distribution — small reseller, fast growth',
     data: {
-      resellerName: 'Foundry Nine Studio', contactName: 'Alex Reyes', resellerCountry: 'Italy', quarter: 'Q3 2026',
+      resellerName: 'Foundry Nine Software Distribution', contactName: 'Alex Reyes', resellerCountry: 'Italy', quarter: 'Q3 2026',
       renewalRate: 86, agreementsTotal: 12, agreementsRenewed: 11, agreementsPartial: 1, agreementsNotRenewed: 0,
       clmStatus: 'active',
       arrGrowth: 34, salesCurrent12m: 85000, salesPrevious12m: 52000, monthlyAverage: 7000, currentMonthExtrap: 9000,
@@ -2395,9 +2425,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Hallmark Business Interiors — steady, no urgent action',
+    label: 'Hallmark IT Distribution — steady, no urgent action',
     data: {
-      resellerName: 'Hallmark Business Interiors', contactName: 'Renee Ashford', resellerCountry: 'Netherlands', quarter: 'Q3 2026',
+      resellerName: 'Hallmark IT Distribution', contactName: 'Renee Ashford', resellerCountry: 'Netherlands', quarter: 'Q3 2026',
       renewalRate: 84, agreementsTotal: 55, agreementsRenewed: 46, agreementsPartial: 5, agreementsNotRenewed: 4,
       clmStatus: 'active',
       arrGrowth: 4, salesCurrent12m: 460000, salesPrevious12m: 440000, monthlyAverage: 38000, currentMonthExtrap: 39000,
@@ -2408,9 +2438,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Vantage Point Consulting — renewal risk + upsell opportunity',
+    label: 'Vantage Point Technology Resellers — renewal risk + upsell opportunity',
     data: {
-      resellerName: 'Vantage Point Consulting', contactName: 'Owen McAllister', resellerCountry: 'Poland', quarter: 'Q3 2026',
+      resellerName: 'Vantage Point Technology Resellers', contactName: 'Owen McAllister', resellerCountry: 'Poland', quarter: 'Q3 2026',
       renewalRate: 45, agreementsTotal: 48, agreementsRenewed: 22, agreementsPartial: 6, agreementsNotRenewed: 20,
       clmStatus: 'inactive',
       arrGrowth: 2, salesCurrent12m: 400000, salesPrevious12m: 390000, monthlyAverage: 34000, currentMonthExtrap: 33000,
@@ -2421,9 +2451,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Silverline Office Group — moderate renewal risk',
+    label: 'Silverline Digital Solutions — moderate renewal risk',
     data: {
-      resellerName: 'Silverline Office Group', contactName: 'Katrina Voss', resellerCountry: 'United Kingdom', quarter: 'Q3 2026',
+      resellerName: 'Silverline Digital Solutions', contactName: 'Katrina Voss', resellerCountry: 'United Kingdom', quarter: 'Q3 2026',
       renewalRate: 45, agreementsTotal: 40, agreementsRenewed: 17, agreementsPartial: 5, agreementsNotRenewed: 18,
       clmStatus: 'active',
       arrGrowth: 1, salesCurrent12m: 250000, salesPrevious12m: 245000, monthlyAverage: 21000, currentMonthExtrap: 20000,
@@ -2434,9 +2464,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Continental Design Alliance — strategic account, upsell headroom',
+    label: 'Continental Software Partners — strategic account, upsell headroom',
     data: {
-      resellerName: 'Continental Design Alliance', contactName: 'Julia Bergstrom', resellerCountry: 'Czech Republic', quarter: 'Q3 2026',
+      resellerName: 'Continental Software Partners', contactName: 'Julia Bergstrom', resellerCountry: 'Czech Republic', quarter: 'Q3 2026',
       renewalRate: 97, agreementsTotal: 90, agreementsRenewed: 88, agreementsPartial: 1, agreementsNotRenewed: 1,
       clmStatus: 'active',
       arrGrowth: 7, salesCurrent12m: 2400000, salesPrevious12m: 2250000, monthlyAverage: 200000, currentMonthExtrap: 205000,
@@ -2447,9 +2477,9 @@ const SAMPLE_RESELLERS = [
     },
   },
   {
-    label: 'Atlas Peak Reseller — minimal data (partial form demo)',
+    label: 'Atlas Peak Technology Distribution — minimal data (partial form demo)',
     data: {
-      resellerName: 'Atlas Peak Reseller', resellerCountry: 'Finland', quarter: 'Q3 2026',
+      resellerName: 'Atlas Peak Technology Distribution', resellerCountry: 'Finland', quarter: 'Q3 2026',
       renewalRate: 75,
       clmStatus: 'active',
     },
