@@ -18,8 +18,58 @@ const resultsBody = document.getElementById('results-body');
 const renewalRateInput = document.getElementById('renewalRate');
 const renewalRateError = document.getElementById('renewalRate-error');
 
+// ---------- per-step validation ----------
+// Returns the element to focus if step `n` is invalid, or null if it's fine.
+// Called both from the wizard's "Next" button (fields already visible) and
+// from the final submit handler as a safety net regardless of which path
+// got the user to step 7 (see setupWizard below for why that safety net
+// matters once native `required` no longer covers hidden steps).
+function validateStep(n) {
+  if (n === 1) {
+    const el = document.getElementById('resellerCountry');
+    const err = document.getElementById('resellerCountry-error');
+    if (!el.value) {
+      err.hidden = false;
+      el.setAttribute('aria-invalid', 'true');
+      return el;
+    }
+    err.hidden = true;
+    el.removeAttribute('aria-invalid');
+    return null;
+  }
+  if (n === 2) {
+    const clmEl = document.getElementById('clmStatus');
+    const clmErr = document.getElementById('clmStatus-error');
+    if (!clmEl.value) {
+      clmErr.hidden = false;
+      clmEl.setAttribute('aria-invalid', 'true');
+      return clmEl;
+    }
+    clmErr.hidden = true;
+    clmEl.removeAttribute('aria-invalid');
+
+    const derived = deriveRenewalFields(readInputs());
+    if (derived.renewalRate === null) {
+      renewalRateError.hidden = false;
+      renewalRateInput.setAttribute('aria-invalid', 'true');
+      return renewalRateInput;
+    }
+    renewalRateError.hidden = true;
+    renewalRateInput.removeAttribute('aria-invalid');
+    return null;
+  }
+  return null;
+}
+
 form.addEventListener('submit', (e) => {
   e.preventDefault();
+
+  const invalid1 = validateStep(1);
+  if (invalid1) { goToStep(1, { skipFocus: true }); invalid1.focus(); return; }
+
+  const invalid2 = validateStep(2);
+  if (invalid2) { goToStep(2, { skipFocus: true }); invalid2.focus(); return; }
+
   const rawInputs = readInputs();
   // any subset of Renewed/Partial/Not-Renewed that's provided must not sum
   // to more than an explicitly-entered Total — catches a typo even when
@@ -33,15 +83,6 @@ form.addEventListener('submit', (e) => {
   const inputs = deriveRenewalFields(rawInputs);
   inputs.agreementsMismatch = agreementsMismatch;
 
-  if (inputs.renewalRate === null) {
-    renewalRateError.hidden = false;
-    renewalRateInput.setAttribute('aria-invalid', 'true');
-    renewalRateInput.focus();
-    return;
-  }
-  renewalRateError.hidden = true;
-  renewalRateInput.removeAttribute('aria-invalid');
-
   const metrics = computeMetrics(inputs);
   render(inputs, metrics);
   emptyHint.hidden = true;
@@ -53,46 +94,74 @@ document.getElementById('fill-sample').addEventListener('click', fillSample);
 document.getElementById('copy-email-en').addEventListener('click', (e) => copyEmail('email-draft-en', e.currentTarget));
 document.getElementById('copy-email-translated').addEventListener('click', (e) => copyEmail('email-draft-translated', e.currentTarget));
 
-// ---------- section nav (jump-to bar, purely navigational — no scoring impact) ----------
+// ---------- wizard (one section visible at a time, "Next"/"Back" between them) ----------
+// All 7 step containers stay mounted in the DOM at all times (toggled via
+// the `hidden` attribute) rather than being built/torn down per step, so
+// fillSample()/readInputs()/the thousands-formatting listeners all keep
+// working unmodified regardless of which step is currently shown.
 
-(function setupSectionNav() {
-  const nav = document.getElementById('section-nav');
-  if (!nav) return;
-  const links = Array.from(nav.querySelectorAll('a'));
-  const sections = links
-    .map(a => document.getElementById(a.dataset.target))
-    .filter(Boolean);
+const WIZARD_STEP_TITLES = {
+  1: 'Reseller',
+  2: 'Renewal & Retention',
+  3: 'Growth',
+  4: 'NSB, Licenses & End Users',
+  5: 'Country Totals',
+  6: 'Auto-Renew',
+  7: 'Upsell Opportunity',
+};
 
-  nav.addEventListener('click', (e) => {
-    const link = e.target.closest('a');
-    if (!link) return;
-    e.preventDefault();
-    const target = document.getElementById(link.dataset.target);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+const wizardSteps = Array.from(document.querySelectorAll('.wizard-step'));
+const wizardDots = Array.from(document.querySelectorAll('.wizard-step-dot'));
+const stepTitleEl = document.getElementById('step-title');
+const wizardAnnouncer = document.getElementById('wizard-announcer');
+const wizardBackBtn = document.getElementById('wizard-back');
+const wizardNextBtn = document.getElementById('wizard-next');
+const wizardSubmitBtn = document.getElementById('wizard-submit');
+
+let currentStep = 1;
+let maxStepReached = 1;
+
+function goToStep(n, opts) {
+  currentStep = n;
+  if (n > maxStepReached) maxStepReached = n;
+
+  wizardSteps.forEach(step => { step.hidden = Number(step.dataset.step) !== n; });
+
+  wizardDots.forEach(dot => {
+    const dotStep = Number(dot.dataset.step);
+    const isCurrent = dotStep === n;
+    dot.setAttribute('aria-current', isCurrent ? 'step' : 'false');
+    dot.classList.toggle('visited', dotStep <= maxStepReached && !isCurrent);
+    dot.disabled = dotStep > maxStepReached;
   });
 
-  function updateActiveLink() {
-    // Below 900px the nav stacks above the fields (a wrapped bar, like
-    // before), so its bottom edge is the reveal line. At wider widths it's
-    // a side column instead — its own top edge (pinned via position:sticky)
-    // marks where the visible scroll area begins, since the nav no longer
-    // occupies vertical space above the content.
-    const isNarrow = window.innerWidth <= 900;
-    const revealLine = isNarrow ? nav.getBoundingClientRect().bottom : nav.getBoundingClientRect().top;
-    let activeIdx = 0;
-    sections.forEach((sec, idx) => {
-      if (sec.getBoundingClientRect().top - revealLine < 40) activeIdx = idx;
-    });
-    links.forEach((a, idx) => a.classList.toggle('active', idx === activeIdx));
-  }
+  stepTitleEl.textContent = WIZARD_STEP_TITLES[n];
+  wizardAnnouncer.textContent = `Step ${n} of 7: ${WIZARD_STEP_TITLES[n]}`;
+  if (!(opts && opts.skipFocus)) stepTitleEl.focus();
 
-  // the form scrolls internally on wide screens (sticky panel) but the
-  // whole page scrolls on narrow ones, so listen on both
-  form.addEventListener('scroll', updateActiveLink);
-  window.addEventListener('scroll', updateActiveLink);
-  window.addEventListener('resize', updateActiveLink);
-  updateActiveLink();
-})();
+  wizardBackBtn.disabled = n === 1;
+  wizardNextBtn.hidden = n === 7;
+  wizardSubmitBtn.hidden = n !== 7;
+}
+
+wizardBackBtn.addEventListener('click', () => {
+  if (currentStep > 1) goToStep(currentStep - 1);
+});
+
+wizardNextBtn.addEventListener('click', () => {
+  const invalidEl = validateStep(currentStep);
+  if (invalidEl) { invalidEl.focus(); return; }
+  if (currentStep < 7) goToStep(currentStep + 1);
+});
+
+wizardDots.forEach(dot => {
+  dot.addEventListener('click', () => {
+    const n = Number(dot.dataset.step);
+    if (n <= maxStepReached) goToStep(n);
+  });
+});
+
+goToStep(1, { skipFocus: true });
 
 // ---------- thousands-formatted number fields ----------
 // These fields are plain text inputs (not type="number") so they can show
@@ -1983,6 +2052,12 @@ form.addEventListener('reset', () => {
   emptyHint.hidden = false;
   renewalRateError.hidden = true;
   renewalRateInput.removeAttribute('aria-invalid');
+  document.getElementById('resellerCountry-error').hidden = true;
+  document.getElementById('resellerCountry').removeAttribute('aria-invalid');
+  document.getElementById('clmStatus-error').hidden = true;
+  document.getElementById('clmStatus').removeAttribute('aria-invalid');
+  maxStepReached = 1;
+  goToStep(1);
 });
 
 // ---------- sample data (10 deliberately different resellers, for demos) ----------
@@ -2144,6 +2219,12 @@ function fillSample() {
   emptyHint.hidden = false;
   renewalRateError.hidden = true;
   renewalRateInput.removeAttribute('aria-invalid');
+  document.getElementById('resellerCountry-error').hidden = true;
+  document.getElementById('resellerCountry').removeAttribute('aria-invalid');
+  document.getElementById('clmStatus-error').hidden = true;
+  document.getElementById('clmStatus').removeAttribute('aria-invalid');
+  maxStepReached = 1;
+  goToStep(1);
 }
 
 populateSamplePicker();

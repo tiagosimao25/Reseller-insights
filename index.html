@@ -35,18 +35,33 @@
     <!-- ============ FORM ============ -->
     <form id="input-form" class="panel form-panel">
 
-      <nav class="section-nav" id="section-nav" aria-label="Jump to form section">
-        <a href="#section-reseller" data-target="section-reseller">Reseller</a>
-        <a href="#section-renewal" data-target="section-renewal">Renewal &amp; Retention</a>
-        <a href="#section-growth" data-target="section-growth">Growth</a>
-        <a href="#section-nsb" data-target="section-nsb">NSB / Licenses / Users</a>
-        <a href="#section-country" data-target="section-country">Country Totals</a>
-        <a href="#section-autorenew" data-target="section-autorenew">Auto-Renew</a>
-        <a href="#section-upsell" data-target="section-upsell">Upsell</a>
-      </nav>
+      <div class="wizard-top-bar">
+        <label for="sample-picker" class="sample-picker-label">Demo reseller <span class="opt">(sample data)</span>
+          <select id="sample-picker"></select>
+        </label>
+        <div class="wizard-top-actions">
+          <button type="button" id="fill-sample" class="btn-secondary">Load sample</button>
+          <button type="reset" class="btn-ghost">Clear</button>
+        </div>
+      </div>
+
+      <ol class="wizard-steps-nav" id="wizard-steps-nav" aria-label="Form steps">
+        <li><button type="button" class="wizard-step-dot" data-step="1">1</button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="2" disabled>2</button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="3" disabled>3</button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="4" disabled>4</button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="5" disabled>5</button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="6" disabled>6</button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="7" disabled>7</button></li>
+      </ol>
+
+      <div class="sr-only" aria-live="polite" id="wizard-announcer"></div>
+
+      <h2 class="step-title" id="step-title" tabindex="-1">Reseller</h2>
 
       <div class="form-fields">
 
+      <div class="wizard-step" data-step="1" id="wizard-step-1">
       <div class="reseller-id" id="section-reseller">
         <label class="reseller-id-label" for="resellerName">Reseller</label>
         <input type="text" id="resellerName" class="reseller-id-input" placeholder="Reseller / company name" autocomplete="off">
@@ -58,7 +73,7 @@
         <p class="field-hint">Fills in the "[Contact Name]" greeting in the suggested email.</p>
 
         <label class="contact-name-label required" for="resellerCountry"><span class="label-text">Country</span>
-          <select id="resellerCountry" required>
+          <select id="resellerCountry" aria-describedby="resellerCountry-error">
             <option value="">— select —</option>
             <option value="United Kingdom" data-lang="en">United Kingdom</option>
             <option value="Portugal" data-lang="pt">Portugal</option>
@@ -80,8 +95,11 @@
           </select>
         </label>
         <p class="field-hint">Sets the language of the second (translated) email draft. United Kingdom gets an English-only draft.</p>
+        <p class="field-error" id="resellerCountry-error" role="alert" hidden>Select a country to continue.</p>
+      </div>
       </div>
 
+      <div class="wizard-step" data-step="2" id="wizard-step-2" hidden>
       <fieldset id="section-renewal">
         <legend>Renewal &amp; Retention</legend>
 
@@ -112,12 +130,13 @@
         <p class="field-hint">Total is derived automatically from Renewed + Partial + Not Renewed if left blank.</p>
 
         <label class="required"><span class="label-text">CLM Status</span>
-          <select id="clmStatus" required>
+          <select id="clmStatus" aria-describedby="clmStatus-error">
             <option value="">— select —</option>
             <option value="active">Active</option>
             <option value="inactive">Not active</option>
           </select>
         </label>
+        <p class="field-error" id="clmStatus-error" role="alert" hidden>Select a CLM status to continue.</p>
       </fieldset>
 
       <fieldset>
@@ -143,7 +162,9 @@
           </label>
         </div>
       </fieldset>
+      </div>
 
+      <div class="wizard-step" data-step="3" id="wizard-step-3" hidden>
       <fieldset id="section-growth">
         <legend>Growth</legend>
         <div class="grid-2">
@@ -164,7 +185,9 @@
           </label>
         </div>
       </fieldset>
+      </div>
 
+      <div class="wizard-step" data-step="4" id="wizard-step-4" hidden>
       <fieldset id="section-nsb">
         <legend>NSB, Licenses &amp; End Users <span class="opt">(trailing 12 months)</span></legend>
         <div class="grid-3">
@@ -188,7 +211,9 @@
           </label>
         </div>
       </fieldset>
+      </div>
 
+      <div class="wizard-step" data-step="5" id="wizard-step-5" hidden>
       <fieldset id="section-country">
         <legend>Country Totals <span class="opt">(to size the reseller)</span></legend>
         <div class="grid-2">
@@ -200,7 +225,9 @@
           </label>
         </div>
       </fieldset>
+      </div>
 
+      <div class="wizard-step" data-step="6" id="wizard-step-6" hidden>
       <fieldset id="section-autorenew">
         <legend>Auto-Renew</legend>
         <div class="grid-3">
@@ -221,7 +248,9 @@
           </label>
         </div>
       </fieldset>
+      </div>
 
+      <div class="wizard-step" data-step="7" id="wizard-step-7" hidden>
       <fieldset id="section-upsell">
         <legend>Upsell Opportunity</legend>
         <fieldset class="upsell-row">
@@ -246,20 +275,16 @@
           </div>
         </fieldset>
       </fieldset>
-
-      <div class="form-actions">
-        <button type="submit" class="btn-primary">Generate Diagnosis</button>
-        <button type="reset" class="btn-ghost">Clear</button>
-      </div>
-
-      <div class="sample-picker-row">
-        <label for="sample-picker" class="sample-picker-label">Demo reseller <span class="opt">(sample data)</span>
-          <select id="sample-picker"></select>
-        </label>
-        <button type="button" id="fill-sample" class="btn-secondary">Load sample</button>
       </div>
 
       </div>
+
+      <div class="wizard-nav">
+        <button type="button" id="wizard-back" class="btn-ghost">← Back</button>
+        <button type="button" id="wizard-next" class="btn-primary">Next →</button>
+        <button type="submit" id="wizard-submit" class="btn-primary" hidden>Generate Diagnosis</button>
+      </div>
+
     </form>
 
     <!-- ============ RESULTS ============ -->

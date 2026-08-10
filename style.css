@@ -287,104 +287,94 @@ body {
   min-width: 0;
 }
 
-.form-panel {
-  position: sticky;
-  top: 20px;
-  max-height: calc(100vh - 40px);
-  overflow-y: auto;
-  display: flex;
-  gap: 18px;
-  align-items: flex-start;
-}
-
-@media (max-width: 900px) {
-  /* overflow-y must be reset too, not just position/max-height — an
-     overflow:auto ancestor establishes the scroll container that
-     position:sticky descendants (like .section-nav) stick against, even
-     when that ancestor's own content never actually overflows it, which
-     stops them from sticking to the real page scroll instead */
-  .form-panel { position: static; max-height: none; overflow-y: visible; flex-direction: column; }
-}
-
 .form-fields {
-  flex: 1;
   min-width: 0;
 }
 
-/* ===== Section nav (jump-to sidebar) ===== */
-/* A vertical list docked beside the form fields, sticky within the panel's
-   own scroll — every section is always one click away, unlike the old
-   horizontal bar which hid Country Totals/Auto-Renew/Upsell behind a
-   scrollbar with no visual hint they existed. */
+/* ===== Wizard chrome ===== */
+/* One section visible at a time (steps toggle the `hidden` attribute on
+   .wizard-step) instead of a single long scrolling form — replaces both
+   the old horizontal jump-bar and the sidebar redesign, neither of which
+   left enough room for the fields themselves to breathe. */
 
-.section-nav {
-  position: sticky;
-  top: 0;
-  align-self: flex-start;
-  z-index: 5;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.wizard-top-bar {
   display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--gridline);
+}
+
+.wizard-top-actions {
+  display: flex;
+  gap: 8px;
   flex-shrink: 0;
-  gap: 4px;
-  width: 132px;
 }
 
-/* small consistent offset so a scrolled-to heading isn't flush against the
-   panel edge — the sidebar sits beside the fields, not above them, so
-   there's no sticky-bar overlap to compensate for here */
-#section-reseller, #section-renewal, #section-growth, #section-nsb,
-#section-country, #section-autorenew, #section-upsell {
-  scroll-margin-top: 12px;
+.wizard-steps-nav {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
 }
 
-.section-nav a {
-  padding: 7px 12px;
-  border-radius: 8px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--text-muted);
+.wizard-steps-nav li { display: contents; }
+
+.wizard-step-dot {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--gridline);
   background: var(--surface-sunken);
-  text-decoration: none;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.section-nav a:hover { color: var(--text-primary); }
-.section-nav a.active { background: var(--accent); color: #fff; }
-.section-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wizard-step-dot:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-muted); }
+.wizard-step-dot:disabled { cursor: default; opacity: 0.45; }
+.wizard-step-dot.visited:not([aria-current="step"]) { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+.wizard-step-dot[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-@media (max-width: 900px) {
-  /* no room for a side column on narrow screens — the nav stacks above the
-     fields as a wrapped pill bar instead, still sticky (now against the
-     page scroll, since .form-panel gives up its own scroll context at this
-     width). flex-wrap (not overflow-x) means every section stays visible
-     without ever hiding behind a scrollbar. */
-  .section-nav {
-    position: sticky;
-    top: 0;
-    background: var(--surface-1);
-    flex-direction: row;
-    flex-wrap: wrap;
-    width: auto;
-    gap: 6px;
-    margin: 0 0 18px;
-    padding: 0 0 14px;
-    border-bottom: 1px solid var(--gridline);
-  }
-  .section-nav a {
-    flex-shrink: 0;
-    white-space: nowrap;
-    padding: 5px 12px;
-    border-radius: 999px;
-  }
-
-  /* the wrapped bar is sticky here, so scrolled-to headings need clearance
-     again — same reasoning as the desktop bar used to need, just resized
-     for this bar's (roughly two-row) height */
-  #section-reseller, #section-renewal, #section-growth, #section-nsb,
-  #section-country, #section-autorenew, #section-upsell {
-    scroll-margin-top: 92px;
-  }
+.step-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 18px;
 }
+.step-title:focus { outline: none; }
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--gridline);
+}
+
+.wizard-nav .btn-ghost:disabled { opacity: 0.4; cursor: default; }
 
 /* ===== Reseller identity ===== */
 
@@ -562,30 +552,13 @@ input[aria-invalid="true"] {
 }
 .upsell-label::before { content: none; }
 
-.form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-}
-
-.sample-picker-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--gridline);
-  flex-wrap: wrap;
-}
-
 .sample-picker-label {
   flex: 1;
   min-width: 180px;
   margin-bottom: 0;
 }
 
-.sample-picker-row .btn-secondary { flex-shrink: 0; }
+.wizard-top-actions .btn-secondary { flex-shrink: 0; }
 
 button {
   font: inherit;
