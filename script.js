@@ -939,12 +939,46 @@ function buildNextAction(i, m, lang) {
 
 // ---------- product recommendation ----------
 
+// Flat-string version — used by the .xlsx export, where a single cell is
+// the only option. The on-screen version (renderProductRecommendation,
+// near render()) shows the same two facts with visual hierarchy instead.
 function buildProductRecommendation(i, m) {
   if (!m.anyUpsellData || !m.dominantPath || m.dominantPath.count === 0) {
     return 'No upgrade opportunities identified in the data provided.';
   }
   const p = m.dominantPath;
-  return `Recommended focus: ${p.label} (${p.count} ${p.unit} eligible). This is the highest-volume upgrade path identified for this reseller.`;
+  return `${p.label} — ${p.count} ${p.unit} eligible.`;
+}
+
+// On-screen: just the two facts that matter — the upgrade path (bold) and
+// the eligible count (muted) — instead of a sentence that says "recommended"
+// and "highest-volume upgrade path" and "for this reseller" to convey the
+// same single idea three times.
+// Same visual language as the six scorecard tiles — a big stat number
+// plus a colored badge — instead of a sentence or a one-off callout, so
+// it reads as another stat rather than body copy.
+function renderProductRecommendation(i, m) {
+  const el = document.getElementById('product-recommendation');
+  if (!m.anyUpsellData || !m.dominantPath || m.dominantPath.count === 0) {
+    el.className = 'tile upsell-tile empty';
+    el.textContent = 'No upgrade opportunities identified in the data provided.';
+    return;
+  }
+  const p = m.dominantPath;
+  el.className = 'tile upsell-tile';
+  el.innerHTML = '';
+  const label = document.createElement('span');
+  label.className = 'tile-label';
+  label.textContent = 'Recommended Upgrade';
+  const value = document.createElement('span');
+  value.className = 'tile-value';
+  value.textContent = `${p.count} ${p.unit}`;
+  const badge = document.createElement('span');
+  badge.className = 'tile-band badge good';
+  badge.textContent = p.label;
+  el.appendChild(label);
+  el.appendChild(value);
+  el.appendChild(badge);
 }
 
 // ---------- email drafts (3 pragmatic angles per diagnosis, each with an
@@ -2258,7 +2292,7 @@ function render(i, m) {
     list.appendChild(li);
   }
 
-  document.getElementById('product-recommendation').textContent = buildProductRecommendation(i, m);
+  renderProductRecommendation(i, m);
   renderEmailVariants(buildEmailVariants(i, m));
 }
 
