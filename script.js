@@ -1912,13 +1912,22 @@ function svgEl(tag, attrs) {
 
 function renderRadar(m) {
   const cx = 150, cy = 150, maxR = 100, labelR = 128;
+  // Priority is the one metric where a HIGH score is bad (urgent/critical) —
+  // every other axis has high=healthy. Plotting it raw would shrink the
+  // shape on that axis for a genuinely healthy account (low priority, good
+  // news) exactly where the other 5 axes are stretched out, reading as a
+  // false "something's wrong here" dent. plotValue inverts just the radius
+  // (100-score) so "bigger = healthier/less urgent" holds on all 6 axes;
+  // the dot's color still comes from the real (non-inverted) band, so a
+  // truly urgent account still shows red — just close to center, matching
+  // how "bad" already reads on every other axis.
   const axes = [
-    { label: 'Priority',   value: m.overallPriority,      band: priorityBand(m.overallPriority) },
-    { label: 'Risk',       value: m.renewalHealth,        band: riskBand(m.renewalHealth) },
-    { label: 'Growth',     value: m.growthScore,          band: growthBand(m.growthScore) },
-    { label: 'Auto-Renew', value: m.autoRenewScore,       band: autoRenewBand(m.autoRenewScore) },
-    { label: 'Upsell',     value: m.upsellScore,          band: upsellBand(m.upsellScore) },
-    { label: 'Size',       value: m.sizeScoreForPriority, band: sizeBand(m.sizeShare) },
+    { label: 'Priority',   value: m.overallPriority,      plotValue: m.overallPriority === null ? null : 100 - m.overallPriority, band: priorityBand(m.overallPriority) },
+    { label: 'Risk',       value: m.renewalHealth,        plotValue: m.renewalHealth,        band: riskBand(m.renewalHealth) },
+    { label: 'Growth',     value: m.growthScore,          plotValue: m.growthScore,          band: growthBand(m.growthScore) },
+    { label: 'Auto-Renew', value: m.autoRenewScore,       plotValue: m.autoRenewScore,       band: autoRenewBand(m.autoRenewScore) },
+    { label: 'Upsell',     value: m.upsellScore,          plotValue: m.upsellScore,          band: upsellBand(m.upsellScore) },
+    { label: 'Size',       value: m.sizeScoreForPriority, plotValue: m.sizeScoreForPriority, band: sizeBand(m.sizeShare) },
   ];
   const angleFor = (idx) => (idx * 60 - 90) * Math.PI / 180;
   const pt = (r, rad) => [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
@@ -1939,8 +1948,8 @@ function renderRadar(m) {
   const NO_DATA_STUB_R = 26;
   const vertices = axes.map((axis, idx) => {
     const rad = angleFor(idx);
-    const hasData = axis.value !== null;
-    const r = hasData ? (Math.max(0, Math.min(100, axis.value)) / 100) * maxR : NO_DATA_STUB_R;
+    const hasData = axis.plotValue !== null;
+    const r = hasData ? (Math.max(0, Math.min(100, axis.plotValue)) / 100) * maxR : NO_DATA_STUB_R;
     const [x, y] = pt(r, rad);
     const [lx, ly] = pt(labelR, rad);
     return { x, y, lx, ly, rad, hasData, band: axis.band, label: axis.label };
