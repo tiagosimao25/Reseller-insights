@@ -46,18 +46,18 @@
       </div>
 
       <ol class="wizard-steps-nav" id="wizard-steps-nav" aria-label="Form steps">
-        <li><button type="button" class="wizard-step-dot" data-step="1">1</button></li>
-        <li><button type="button" class="wizard-step-dot" data-step="2" disabled>2</button></li>
-        <li><button type="button" class="wizard-step-dot" data-step="3" disabled>3</button></li>
-        <li><button type="button" class="wizard-step-dot" data-step="4" disabled>4</button></li>
-        <li><button type="button" class="wizard-step-dot" data-step="5" disabled>5</button></li>
-        <li><button type="button" class="wizard-step-dot" data-step="6" disabled>6</button></li>
-        <li><button type="button" class="wizard-step-dot" data-step="7" disabled>7</button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="1" aria-label="Step 1: Reseller"><span aria-hidden="true">1</span><span class="wizard-step-dot-tooltip" aria-hidden="true">Reseller</span></button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="2" disabled aria-label="Step 2: Renewal &amp; Retention"><span aria-hidden="true">2</span><span class="wizard-step-dot-tooltip" aria-hidden="true">Renewal &amp; Retention</span></button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="3" disabled aria-label="Step 3: Growth"><span aria-hidden="true">3</span><span class="wizard-step-dot-tooltip" aria-hidden="true">Growth</span></button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="4" disabled aria-label="Step 4: NSB, Licenses &amp; End Users"><span aria-hidden="true">4</span><span class="wizard-step-dot-tooltip" aria-hidden="true">NSB, Licenses &amp; End Users</span></button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="5" disabled aria-label="Step 5: Country Totals"><span aria-hidden="true">5</span><span class="wizard-step-dot-tooltip" aria-hidden="true">Country Totals</span></button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="6" disabled aria-label="Step 6: Auto-Renew"><span aria-hidden="true">6</span><span class="wizard-step-dot-tooltip" aria-hidden="true">Auto-Renew</span></button></li>
+        <li><button type="button" class="wizard-step-dot" data-step="7" disabled aria-label="Step 7: Upsell Opportunity"><span aria-hidden="true">7</span><span class="wizard-step-dot-tooltip" aria-hidden="true">Upsell Opportunity</span></button></li>
       </ol>
 
       <div class="sr-only" aria-live="polite" id="wizard-announcer"></div>
 
-      <h2 class="step-title" id="step-title" tabindex="-1">Reseller</h2>
+      <h2 class="step-title sr-only" id="step-title" tabindex="-1">Reseller</h2>
 
       <div class="form-fields">
 
@@ -302,8 +302,14 @@
       <div id="results-body" hidden>
 
         <div class="results-header">
-          <h2 id="results-name">Reseller diagnosis</h2>
-          <p id="results-meta" class="results-meta">—</p>
+          <div class="results-header-text">
+            <h2 id="results-name">Reseller diagnosis</h2>
+            <p id="results-meta" class="results-meta">—</p>
+          </div>
+          <button type="button" id="export-report" class="btn-export" title="Download this report as an Excel spreadsheet (.xlsx)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12" stroke-linecap="round"/><path d="M7 10l5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19h16" stroke-linecap="round"/></svg>
+            <span>Export .xlsx</span>
+          </button>
         </div>
 
         <div class="tiles">
@@ -382,12 +388,6 @@
               <pre id="email-draft-translated" class="email-draft">—</pre>
             </div>
           </div>
-        </div>
-
-        <div class="block block-export">
-          <h2>Export Report</h2>
-          <p class="opt">Download everything on this page as a spreadsheet — scores, diagnosis, and recommendation.</p>
-          <button type="button" id="export-report" class="btn-secondary">Download as Excel (.xlsx)</button>
         </div>
 
       </div>

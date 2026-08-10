@@ -61,14 +61,15 @@ function validateStep(n) {
   return null;
 }
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-
+// Shared by the real "Generate Diagnosis" submit and by fillSample(), which
+// also generates immediately instead of leaving the user to click Next
+// through every step just to reach the submit button.
+function generateDiagnosis() {
   const invalid1 = validateStep(1);
-  if (invalid1) { goToStep(1, { skipFocus: true }); invalid1.focus(); return; }
+  if (invalid1) { goToStep(1, { skipFocus: true }); invalid1.focus(); return false; }
 
   const invalid2 = validateStep(2);
-  if (invalid2) { goToStep(2, { skipFocus: true }); invalid2.focus(); return; }
+  if (invalid2) { goToStep(2, { skipFocus: true }); invalid2.focus(); return false; }
 
   const rawInputs = readInputs();
   // any subset of Renewed/Partial/Not-Renewed that's provided must not sum
@@ -88,6 +89,12 @@ form.addEventListener('submit', (e) => {
   emptyHint.hidden = true;
   resultsBody.hidden = false;
   resultsBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return true;
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  generateDiagnosis();
 });
 
 document.getElementById('fill-sample').addEventListener('click', fillSample);
@@ -2215,16 +2222,18 @@ function fillSample() {
     else el.value = value;
   }
 
-  resultsBody.hidden = true;
-  emptyHint.hidden = false;
   renewalRateError.hidden = true;
   renewalRateInput.removeAttribute('aria-invalid');
   document.getElementById('resellerCountry-error').hidden = true;
   document.getElementById('resellerCountry').removeAttribute('aria-invalid');
   document.getElementById('clmStatus-error').hidden = true;
   document.getElementById('clmStatus').removeAttribute('aria-invalid');
-  maxStepReached = 1;
-  goToStep(1);
+
+  // Sample data is always complete, so skip straight to the diagnosis
+  // instead of making the user click Next through all 7 steps.
+  maxStepReached = 7;
+  goToStep(7, { skipFocus: true });
+  generateDiagnosis();
 }
 
 populateSamplePicker();
