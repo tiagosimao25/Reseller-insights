@@ -30,6 +30,34 @@
     </header>
 
     <section class="doc-section">
+      <span class="doc-eyebrow">Using the tool</span>
+      <h2>Filling in the form</h2>
+      <p>The form is a 7-step wizard — one section at a time (Reseller → Renewal &amp; Retention → Growth → NSB, Licenses &amp; End Users → Country Totals → Auto-Renew → Upsell Opportunity), with Back/Next to move between them. The numbered dots above the form track progress: they become clickable once you've visited that step, so you can jump back to fix something without walking through every step again — but you can't skip ahead of a step you haven't reached yet.</p>
+      <p>Country and CLM Status are the only two fields that block "Next" if left empty; everything else is optional. "Load sample" fills in one of ten demo resellers and jumps straight to the finished diagnosis — no need to click through the wizard yourself.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>Reading the results</h2>
+      <p>Results open on <strong>Numbers</strong> — the six scorecard tiles, same as always. A <strong>Graphs</strong> tab next to it gives the same six scores three other ways:</p>
+      <ul class="bullet-list">
+        <li><strong>Overview</strong> — a radar chart with one axis per score. Reads at a glance: a full, even hexagon is a healthy account; a shape pinched in on one side shows exactly where the trouble is. Priority is the one axis plotted "backwards" on purpose — a high Priority score means urgent, not healthy, so it's plotted as 100 − score to keep "bigger = healthier" true on all six axes. Its color still reflects the real score underneath, so a genuinely urgent account still shows up red.</li>
+        <li><strong>Scores</strong> — the same six numbers as plain horizontal bars, for whenever the exact ranking matters more than the shape.</li>
+        <li><strong>Gauges</strong> — the same six numbers again, as ring gauges. A metric with no data at all shows as a dashed empty ring rather than a filled-in zero.</li>
+      </ul>
+      <p>Growth and Reseller Size are the only two tiles that carry a trend arrow (e.g. "↑ +12.4%"): it's the trailing-12-month sales figure compared to the previous period — the one place in the form where both a "current" and a "previous" number actually exist. Every other "Δ" field (NSB, Licenses, End Users) is typed in as a delta directly, with no earlier value behind it to compare against, so those tiles don't get a trend arrow.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>The three email drafts</h2>
+      <p>Every diagnosis comes with three angles to choose from — Retention-focused, Growth &amp; upsell, and Quarterly review — each built from the same underlying numbers but leading with a different priority. If the reseller's country speaks a language other than English, a second, fully translated draft appears alongside the English one; United Kingdom accounts only get the English draft. Each draft has its own "Copy" button.</p>
+    </section>
+
+    <section class="doc-section">
+      <h2>Exporting</h2>
+      <p>The "Export" button next to the reseller name downloads everything on the results panel — scores, diagnosis, and recommendation — as an Excel (.xlsx) file.</p>
+    </section>
+
+    <section class="doc-section">
       <span class="doc-eyebrow">Pipeline</span>
       <h2>5 steps, every time</h2>
       <p>Every "Generate Diagnosis" click runs the same 5 steps. Same numbers in, same result out — nothing here is random or guessed, and every result on screen traces back to a field you filled in.</p>

@@ -913,7 +913,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn-copy:hover { border-color: var(--text-muted); }
 .btn-copy:disabled { color: var(--status-good); border-color: var(--status-good); }
 
-.bullet-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.bullet-list { margin: 0 0 14px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.bullet-list:last-child { margin-bottom: 0; }
 .bullet-list li { font-size: 0.88rem; line-height: 1.45; }
 
 .next-action {
