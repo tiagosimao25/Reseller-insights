@@ -514,6 +514,19 @@ function computeMetrics(i) {
     [W.priority.autoRenewGap, autoRenewScore !== null ? 100 - autoRenewScore : null],
     [W.priority.size, sizeScoreForPriority],
   ]);
+  // Split priority into its two halves — how much of the number comes from
+  // risk (renewal risk + auto-renew gap) vs. opportunity (upsell + growth +
+  // size) — so the headline can say *why* an account is a priority, not
+  // just that it is. Same sub-weights as overallPriority, just grouped.
+  const priorityRiskComponent = weightedAvg([
+    [W.priority.renewalRisk, renewalHealth !== null ? 100 - renewalHealth : null],
+    [W.priority.autoRenewGap, autoRenewScore !== null ? 100 - autoRenewScore : null],
+  ]);
+  const priorityOpportunityComponent = weightedAvg([
+    [W.priority.upsell, upsellScore],
+    [W.priority.growth, growthScore],
+    [W.priority.size, sizeScoreForPriority],
+  ]);
 
   return {
     notRenewedRatio, partialRatio, valueRangeRisk,
@@ -522,7 +535,7 @@ function computeMetrics(i) {
     sizeShare, sizeScoreForPriority,
     upsellLicTotal, upsellRatio, upsellScore, dominantPath, anyUpsellData,
     upsellByPath: { studio: studioVol, proplus: proplusVol, ent4: ent4Vol },
-    overallPriority,
+    overallPriority, priorityRiskComponent, priorityOpportunityComponent,
   };
 }
 
@@ -634,9 +647,7 @@ function buildDiagnostic(i, m) {
   }
 
   if (b.length === 0) push('neutral', 'Not enough data to generate a diagnosis — fill in more fields.');
-  return b
-    .sort((a, c) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[c.severity])
-    .map(x => x.text);
+  return b.sort((a, c) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[c.severity]);
 }
 
 // ---------- next action (data-driven rule table, first match wins) ----------
@@ -2170,6 +2181,45 @@ function setTrend(id, pct) {
   el.hidden = false;
 }
 
+// Classifies *why* Overall Priority is elevated — risk (renewal risk +
+// auto-renew gap) vs. opportunity (upsell + growth + size) — using the
+// same sub-weights computeMetrics() already used to build the score, just
+// split into its two halves. A BDM glancing at "Priority: High" can't
+// tell whether that means "about to churn" or "worth investing in" until
+// they read every diagnosis bullet; this tag answers that in one word.
+function priorityDriverTag(m) {
+  if (m.overallPriority === null) return null;
+  // A "Low" priority reading means nothing urgent needs explaining — showing
+  // e.g. "Risk-driven" next to a fine, low-priority account (which can
+  // happen simply because only risk-side fields were filled in, not
+  // because anything's wrong) would paint the headline red for no reason.
+  if (priorityBand(m.overallPriority).status === 'good') return null;
+  const risk = m.priorityRiskComponent;
+  const opp = m.priorityOpportunityComponent;
+  if (risk === null && opp === null) return null;
+  if (risk === null) return { label: 'Opportunity-driven', status: 'good' };
+  if (opp === null) return { label: 'Risk-driven', status: 'critical' };
+  const diff = opp - risk;
+  if (Math.abs(diff) < 8) return { label: 'Risk + opportunity', status: 'warning' };
+  return diff > 0 ? { label: 'Opportunity-driven', status: 'good' } : { label: 'Risk-driven', status: 'critical' };
+}
+
+// The headline callout: Next Action plus the driver tag, promoted above
+// the tiles/graphs so the single most decision-relevant line on the page
+// is the first thing read, not the last.
+function setHeadlineAction(i, m) {
+  const tagEl = document.getElementById('headline-action-tag');
+  const tag = priorityDriverTag(m);
+  if (tag) {
+    tagEl.textContent = tag.label;
+    tagEl.className = 'headline-action-tag badge ' + tag.status;
+    tagEl.hidden = false;
+  } else {
+    tagEl.hidden = true;
+  }
+  document.getElementById('next-action').textContent = buildNextAction(i, m);
+}
+
 let lastInputs = null;
 let lastMetrics = null;
 
@@ -2185,6 +2235,7 @@ function render(i, m) {
 
   document.getElementById('results-name').textContent = i.resellerName || 'Reseller diagnosis';
   document.getElementById('results-meta').textContent = `${i.quarter} · Overall priority: ${pBand.label}`;
+  setHeadlineAction(i, m);
 
   setTile('tile-priority', m.overallPriority === null ? '—' : Math.round(m.overallPriority), pBand, m.overallPriority);
   setTile('tile-risk', m.renewalHealth === null ? '—' : Math.round(m.renewalHealth), rBand, m.renewalHealth);
@@ -2202,12 +2253,12 @@ function render(i, m) {
   list.innerHTML = '';
   for (const bullet of buildDiagnostic(i, m)) {
     const li = document.createElement('li');
-    li.textContent = bullet;
+    li.textContent = bullet.text;
+    li.className = 'diag-' + bullet.severity;
     list.appendChild(li);
   }
 
   document.getElementById('product-recommendation').textContent = buildProductRecommendation(i, m);
-  document.getElementById('next-action').textContent = buildNextAction(i, m);
   renderEmailVariants(buildEmailVariants(i, m));
 }
 
@@ -2304,7 +2355,7 @@ function buildReportRows(i, m) {
     ['Reseller Size (label)', sBand.label],
   ];
 
-  buildDiagnostic(i, m).forEach((line, idx) => rows.push([`Diagnosis ${idx + 1}`, line]));
+  buildDiagnostic(i, m).forEach((bullet, idx) => rows.push([`Diagnosis ${idx + 1}`, bullet.text]));
   rows.push(['Product Recommendation', buildProductRecommendation(i, m)]);
   rows.push(['Next Action', buildNextAction(i, m)]);
 
