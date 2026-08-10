@@ -314,7 +314,16 @@
           </button>
         </div>
 
-        <div class="tiles">
+        <div class="results-view-toggle" role="tablist" aria-label="Results view">
+          <button type="button" class="view-toggle-btn" id="view-toggle-numbers" role="tab" aria-selected="true">Numbers</button>
+          <button type="button" class="view-toggle-btn" id="view-toggle-graphs" role="tab" aria-selected="false">Graphs</button>
+        </div>
+
+        <div class="radar-card" id="results-view-graphs" hidden>
+          <div class="radar-chart" id="radar-chart" aria-hidden="true"></div>
+        </div>
+
+        <div class="tiles" id="results-view-numbers">
           <div class="tile" id="tile-priority">
             <span class="tile-label">Overall Priority</span>
             <span class="tile-value">—</span>
@@ -329,7 +338,10 @@
           </div>
           <div class="tile" id="tile-growth">
             <span class="tile-label">Growth</span>
-            <span class="tile-value">—</span>
+            <span class="tile-value-row">
+              <span class="tile-value">—</span>
+              <span class="tile-trend" id="tile-growth-trend" hidden></span>
+            </span>
             <span class="tile-band badge">—</span>
             <span class="tile-track"><span class="tile-fill"></span></span>
           </div>
@@ -347,7 +359,10 @@
           </div>
           <div class="tile" id="tile-size">
             <span class="tile-label">Reseller Size</span>
-            <span class="tile-value">—</span>
+            <span class="tile-value-row">
+              <span class="tile-value">—</span>
+              <span class="tile-trend" id="tile-size-trend" hidden></span>
+            </span>
             <span class="tile-band badge">—</span>
             <span class="tile-track"><span class="tile-fill"></span></span>
           </div>

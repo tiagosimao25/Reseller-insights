@@ -101,6 +101,26 @@ document.getElementById('fill-sample').addEventListener('click', fillSample);
 document.getElementById('copy-email-en').addEventListener('click', (e) => copyEmail('email-draft-en', e.currentTarget));
 document.getElementById('copy-email-translated').addEventListener('click', (e) => copyEmail('email-draft-translated', e.currentTarget));
 
+// ---------- results view toggle (Numbers scorecard <-> Graphs) ----------
+// Numbers is the default view; Graphs (the radar chart) is opt-in via a
+// small tab control, since a short-attention-span skim starts with the
+// familiar numbers and the chart is there for whoever wants the shape.
+const viewToggleNumbersBtn = document.getElementById('view-toggle-numbers');
+const viewToggleGraphsBtn = document.getElementById('view-toggle-graphs');
+const resultsViewNumbers = document.getElementById('results-view-numbers');
+const resultsViewGraphs = document.getElementById('results-view-graphs');
+
+function setResultsView(view) {
+  const showGraphs = view === 'graphs';
+  resultsViewGraphs.hidden = !showGraphs;
+  resultsViewNumbers.hidden = showGraphs;
+  viewToggleGraphsBtn.setAttribute('aria-selected', String(showGraphs));
+  viewToggleNumbersBtn.setAttribute('aria-selected', String(!showGraphs));
+}
+
+viewToggleNumbersBtn.addEventListener('click', () => setResultsView('numbers'));
+viewToggleGraphsBtn.addEventListener('click', () => setResultsView('graphs'));
+
 // ---------- wizard (one section visible at a time, "Next"/"Back" between them) ----------
 // All 7 step containers stay mounted in the DOM at all times (toggled via
 // the `hidden` attribute) rather than being built/torn down per step, so
@@ -1878,6 +1898,97 @@ const STATUS_COLOR = {
   neutral: 'var(--status-neutral)',
 };
 
+// Six-axis radar giving a one-glance shape for the whole scorecard. Each
+// axis mirrors exactly what its tile shows (same 0-100 value, same band fn
+// for color) so the chart and the tiles never disagree. A null axis plots
+// at r=0 (dents toward center) and renders as a dashed "no data" dot rather
+// than a fabricated zero score.
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function renderRadar(m) {
+  const cx = 150, cy = 150, maxR = 100, labelR = 128;
+  const axes = [
+    { label: 'Priority',   value: m.overallPriority,      band: priorityBand(m.overallPriority) },
+    { label: 'Risk',       value: m.renewalHealth,        band: riskBand(m.renewalHealth) },
+    { label: 'Growth',     value: m.growthScore,          band: growthBand(m.growthScore) },
+    { label: 'Auto-Renew', value: m.autoRenewScore,       band: autoRenewBand(m.autoRenewScore) },
+    { label: 'Upsell',     value: m.upsellScore,          band: upsellBand(m.upsellScore) },
+    { label: 'Size',       value: m.sizeScoreForPriority, band: sizeBand(m.sizeShare) },
+  ];
+  const angleFor = (idx) => (idx * 60 - 90) * Math.PI / 180;
+  const pt = (r, rad) => [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+
+  const svg = svgEl('svg', {
+    viewBox: '-20 -15 340 330', width: '240', height: '240', role: 'img',
+    'aria-label': 'Scorecard radar across all six metrics',
+  });
+
+  [0.333, 0.667, 1].forEach((frac) => {
+    const pts = axes.map((_, idx) => pt(maxR * frac, angleFor(idx)).join(',')).join(' ');
+    svg.appendChild(svgEl('polygon', { class: 'radar-grid-ring', points: pts }));
+  });
+
+  // No-data axes plot at a small fixed stub radius rather than the exact
+  // center — at r=0 every no-data axis lands on the same point and their
+  // dashed "no data" dots stack invisibly under the center readout.
+  const NO_DATA_STUB_R = 26;
+  const vertices = axes.map((axis, idx) => {
+    const rad = angleFor(idx);
+    const hasData = axis.value !== null;
+    const r = hasData ? (Math.max(0, Math.min(100, axis.value)) / 100) * maxR : NO_DATA_STUB_R;
+    const [x, y] = pt(r, rad);
+    const [lx, ly] = pt(labelR, rad);
+    return { x, y, lx, ly, rad, hasData, band: axis.band, label: axis.label };
+  });
+
+  vertices.forEach((v) => {
+    const [ex, ey] = pt(maxR, v.rad);
+    svg.appendChild(svgEl('line', { class: 'radar-spoke', x1: cx, y1: cy, x2: ex, y2: ey }));
+  });
+
+  svg.appendChild(svgEl('polygon', {
+    class: 'radar-shape',
+    points: vertices.map(v => `${v.x.toFixed(1)},${v.y.toFixed(1)}`).join(' '),
+  }));
+
+  vertices.forEach((v) => {
+    const dot = svgEl('circle', {
+      class: 'radar-dot' + (v.hasData ? '' : ' radar-dot-empty'),
+      cx: v.x.toFixed(1), cy: v.y.toFixed(1), r: 4.5,
+    });
+    if (v.hasData) dot.style.fill = STATUS_COLOR[v.band.status] || STATUS_COLOR.neutral;
+    svg.appendChild(dot);
+  });
+
+  vertices.forEach((v) => {
+    const cos = Math.cos(v.rad);
+    const anchor = cos > 0.3 ? 'start' : cos < -0.3 ? 'end' : 'middle';
+    const t = svgEl('text', {
+      class: 'radar-axis-label' + (v.hasData ? '' : ' radar-axis-label-empty'),
+      x: v.lx.toFixed(1), y: v.ly.toFixed(1), 'text-anchor': anchor,
+    });
+    t.textContent = v.label;
+    svg.appendChild(t);
+  });
+
+  const pBand = priorityBand(m.overallPriority);
+  const scoreText = svgEl('text', { class: 'radar-center-score', x: 150, y: 146, 'text-anchor': 'middle' });
+  scoreText.textContent = m.overallPriority === null ? '—' : Math.round(m.overallPriority);
+  const labelText = svgEl('text', { class: 'radar-center-label', x: 150, y: 163, 'text-anchor': 'middle' });
+  labelText.textContent = pBand.label;
+  svg.appendChild(scoreText);
+  svg.appendChild(labelText);
+
+  const container = document.getElementById('radar-chart');
+  container.innerHTML = '';
+  container.appendChild(svg);
+}
+
 // A tile shows one metric exactly once: label, value, status badge, and a
 // fill bar sized off the underlying 0-100 score — no separate meter list.
 function setTile(id, value, bandInfo, score) {
@@ -1889,6 +2000,23 @@ function setTile(id, value, bandInfo, score) {
   const fillEl = tile.querySelector('.tile-fill');
   fillEl.style.width = (score === null ? 0 : Math.max(0, Math.min(100, score))) + '%';
   fillEl.style.background = STATUS_COLOR[bandInfo.status] || STATUS_COLOR.neutral;
+}
+
+// Trend badge for tiles with a genuine current-vs-previous comparison
+// backing them (only salesCurrent12m/salesPrevious12m qualifies today —
+// every other "Δ" field is a delta typed in directly, with no underlying
+// previous value to compare against). Hidden entirely when there's nothing
+// honest to show, rather than fabricating a "+0.0%".
+function setTrend(id, pct) {
+  const el = document.getElementById(id);
+  if (pct === null) { el.hidden = true; return; }
+  const isFlat = pct === 0;
+  const isUp = pct > 0;
+  const arrow = isFlat ? '→' : (isUp ? '↑' : '↓');
+  const sign = isFlat ? '' : (isUp ? '+' : '');
+  el.textContent = `${arrow} ${sign}${fmt(pct, 1)}%`;
+  el.style.color = isFlat ? STATUS_COLOR.neutral : (isUp ? STATUS_COLOR.good : STATUS_COLOR.critical);
+  el.hidden = false;
 }
 
 let lastInputs = null;
@@ -1913,6 +2041,9 @@ function render(i, m) {
   setTile('tile-autorenew', m.autoRenewScore === null ? '—' : Math.round(m.autoRenewScore), aBand, m.autoRenewScore);
   setTile('tile-upsell', m.upsellScore === null ? '—' : Math.round(m.upsellScore), uBand, m.upsellScore);
   setTile('tile-size', m.sizeShare === null ? '—' : fmt(m.sizeShare,1) + '%', sBand, m.sizeScoreForPriority);
+  setTrend('tile-growth-trend', m.salesGrowthPct);
+  setTrend('tile-size-trend', m.salesGrowthPct);
+  renderRadar(m);
 
   const list = document.getElementById('diagnostic-list');
   list.innerHTML = '';
