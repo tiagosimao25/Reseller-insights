@@ -320,7 +320,14 @@
         </div>
 
         <div class="radar-card" id="results-view-graphs" hidden>
+          <div class="chart-type-toggle" role="tablist" aria-label="Graph type">
+            <button type="button" class="chart-type-btn" id="chart-type-radar" role="tab" aria-selected="true">Overview</button>
+            <button type="button" class="chart-type-btn" id="chart-type-bars" role="tab" aria-selected="false">Scores</button>
+            <button type="button" class="chart-type-btn" id="chart-type-valuerange" role="tab" aria-selected="false">By Value Range</button>
+          </div>
           <div class="radar-chart" id="radar-chart" aria-hidden="true"></div>
+          <div class="bar-chart" id="bar-chart" aria-hidden="true" hidden></div>
+          <div class="bar-chart" id="valuerange-chart" aria-hidden="true" hidden></div>
         </div>
 
         <div class="tiles" id="results-view-numbers">

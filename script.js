@@ -121,6 +121,29 @@ function setResultsView(view) {
 viewToggleNumbersBtn.addEventListener('click', () => setResultsView('numbers'));
 viewToggleGraphsBtn.addEventListener('click', () => setResultsView('graphs'));
 
+// ---------- chart type toggle (Overview radar <-> Scores bars <-> By Value Range bars) ----------
+const chartTypeBtns = {
+  radar: document.getElementById('chart-type-radar'),
+  bars: document.getElementById('chart-type-bars'),
+  valuerange: document.getElementById('chart-type-valuerange'),
+};
+const chartTypeEls = {
+  radar: document.getElementById('radar-chart'),
+  bars: document.getElementById('bar-chart'),
+  valuerange: document.getElementById('valuerange-chart'),
+};
+
+function setChartType(type) {
+  for (const key of Object.keys(chartTypeEls)) {
+    chartTypeEls[key].hidden = key !== type;
+    chartTypeBtns[key].setAttribute('aria-selected', String(key === type));
+  }
+}
+
+chartTypeBtns.radar.addEventListener('click', () => setChartType('radar'));
+chartTypeBtns.bars.addEventListener('click', () => setChartType('bars'));
+chartTypeBtns.valuerange.addEventListener('click', () => setChartType('valuerange'));
+
 // ---------- wizard (one section visible at a time, "Next"/"Back" between them) ----------
 // All 7 step containers stay mounted in the DOM at all times (toggled via
 // the `hidden` attribute) rather than being built/torn down per step, so
@@ -1998,6 +2021,94 @@ function renderRadar(m) {
   container.appendChild(svg);
 }
 
+// Shared renderer for the two bar-chart views (Scores, By Value Range).
+// Each row is { label, width (0-100 or null), display (string or null),
+// band }. A row with width===null renders muted with a "—" instead of a
+// fabricated zero-length bar; if every row is null, shows one empty-state
+// message instead of six meaningless empty tracks.
+function renderBarChart(containerId, rows) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+
+  if (rows.every(r => r.width === null)) {
+    const p = document.createElement('p');
+    p.className = 'bar-chart-empty';
+    p.textContent = 'No data entered for this view yet.';
+    container.appendChild(p);
+    return;
+  }
+
+  rows.forEach((row) => {
+    const item = document.createElement('div');
+    item.className = 'bar-row' + (row.width === null ? ' bar-row-empty' : '');
+
+    const label = document.createElement('span');
+    label.className = 'bar-label';
+    label.textContent = row.label;
+
+    const track = document.createElement('span');
+    track.className = 'bar-track';
+    const fill = document.createElement('span');
+    fill.className = 'bar-fill';
+    if (row.width !== null) {
+      fill.style.width = Math.max(0, Math.min(100, row.width)) + '%';
+      fill.style.background = STATUS_COLOR[row.band.status] || STATUS_COLOR.neutral;
+    }
+    track.appendChild(fill);
+
+    const value = document.createElement('span');
+    value.className = 'bar-value';
+    value.textContent = row.display === null ? '—' : row.display;
+
+    item.appendChild(label);
+    item.appendChild(track);
+    item.appendChild(value);
+    container.appendChild(item);
+  });
+}
+
+// "Scores" view: the same 6 metrics as the radar, as bars — easier to read
+// exact values/ranking than a shape. Priority is NOT radius-inverted here
+// (unlike the radar) since each row is read independently, not as part of
+// one holistic shape, so there's no "false dent" risk to correct for.
+function renderScoreBars(m) {
+  const rows = [
+    { label: 'Priority',   width: m.overallPriority,      display: m.overallPriority === null ? null : String(Math.round(m.overallPriority)), band: priorityBand(m.overallPriority) },
+    { label: 'Risk',       width: m.renewalHealth,        display: m.renewalHealth === null ? null : String(Math.round(m.renewalHealth)), band: riskBand(m.renewalHealth) },
+    { label: 'Growth',     width: m.growthScore,          display: m.growthScore === null ? null : String(Math.round(m.growthScore)), band: growthBand(m.growthScore) },
+    { label: 'Auto-Renew', width: m.autoRenewScore,       display: m.autoRenewScore === null ? null : String(Math.round(m.autoRenewScore)), band: autoRenewBand(m.autoRenewScore) },
+    { label: 'Upsell',     width: m.upsellScore,          display: m.upsellScore === null ? null : String(Math.round(m.upsellScore)), band: upsellBand(m.upsellScore) },
+    { label: 'Size',       width: m.sizeScoreForPriority, display: m.sizeShare === null ? null : fmt(m.sizeShare, 1) + '%', band: sizeBand(m.sizeShare) },
+  ];
+  renderBarChart('bar-chart', rows);
+}
+
+// "By Value Range" view: the optional per-bucket renewal-rate fields
+// (Step 2, "Renewal Rate by Value Range") are collected but never
+// visualized anywhere else in the app — this is the only place they're
+// charted. Read straight from the inputs (num()) rather than `i`/`m`,
+// since only the aggregated low/high buckets are carried into readInputs().
+const VALUE_RANGE_BUCKETS = [
+  { id: 'vr_0_1', label: '$0–1k' },
+  { id: 'vr_1_5', label: '$1–5k' },
+  { id: 'vr_5_10', label: '$5–10k' },
+  { id: 'vr_10_25', label: '$10–25k' },
+  { id: 'vr_25_50', label: '$25–50k' },
+  { id: 'vr_50_plus', label: '$50k+' },
+];
+function renderValueRangeBars() {
+  const rows = VALUE_RANGE_BUCKETS.map((b) => {
+    const v = num(b.id);
+    return {
+      label: b.label,
+      width: v,
+      display: v === null ? null : fmt(v, 1) + '%',
+      band: v === null ? { status: 'neutral' } : riskBand(v),
+    };
+  });
+  renderBarChart('valuerange-chart', rows);
+}
+
 // A tile shows one metric exactly once: label, value, status badge, and a
 // fill bar sized off the underlying 0-100 score — no separate meter list.
 function setTile(id, value, bandInfo, score) {
@@ -2024,6 +2135,7 @@ function setTrend(id, pct) {
   const arrow = isFlat ? '→' : (isUp ? '↑' : '↓');
   const sign = isFlat ? '' : (isUp ? '+' : '');
   el.textContent = `${arrow} ${sign}${fmt(pct, 1)}%`;
+  el.title = 'Trailing 12-month sales vs. the previous period';
   el.style.color = isFlat ? STATUS_COLOR.neutral : (isUp ? STATUS_COLOR.good : STATUS_COLOR.critical);
   el.hidden = false;
 }
@@ -2053,6 +2165,8 @@ function render(i, m) {
   setTrend('tile-growth-trend', m.salesGrowthPct);
   setTrend('tile-size-trend', m.salesGrowthPct);
   renderRadar(m);
+  renderScoreBars(m);
+  renderValueRangeBars();
 
   const list = document.getElementById('diagnostic-list');
   list.innerHTML = '';
