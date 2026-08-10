@@ -27,7 +27,7 @@
     gate.id = 'access-gate';
     gate.innerHTML =
       '<form id="access-gate-form">' +
-        '<p class="access-gate-label">Reseller Insights</p>' +
+        '<p class="access-gate-label">Partner Pulse</p>' +
         '<p class="access-gate-hint">Internal tool — enter the team password.</p>' +
         '<input type="password" id="access-gate-input" autocomplete="off" autofocus>' +
         '<button type="submit">Enter</button>' +

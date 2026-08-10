@@ -1,5 +1,5 @@
 // ===================================================================
-// Reseller Insights — shared tuning constants
+// Partner Pulse — shared tuning constants
 // Loaded before script.js (the dashboard) and methodology.js (the "how
 // it works" page), so both always describe the exact same model —
 // nothing here is duplicated as hardcoded text anywhere else.

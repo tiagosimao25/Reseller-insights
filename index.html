@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reseller Insights — Correlation Dashboard</title>
+<title>Partner Pulse — Correlation Dashboard</title>
 <script src="access-gate.js"></script>
 <script src="theme-toggle.js"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23fa0f00'/%3E%3C/svg%3E">
@@ -17,7 +17,7 @@
 
   <header class="app-header">
     <div class="app-header-top">
-      <h1>Reseller Insights</h1>
+      <h1>Partner Pulse</h1>
       <div class="app-header-actions">
         <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode" title="Switch to dark mode">
           <svg class="theme-toggle-icon theme-toggle-icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8L6 18M18 6l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -26,8 +26,8 @@
         <a href="methodology.html" class="nav-link">How it works →</a>
       </div>
     </div>
-    <p class="subtitle">Fill in a reseller's numbers and get an instant read — scores, risk, and what to do next.</p>
-    <p class="storage-hint">Nothing you enter is sent anywhere. It all stays in your browser, and clears when you leave the page.</p>
+    <p class="subtitle">Turn reseller data into actionable insights, uncover risks, and identify growth opportunities.</p>
+    <p class="storage-hint">Your data stays private — nothing is stored or shared.</p>
   </header>
 
   <div class="layout">
@@ -45,13 +45,15 @@
         <a href="#section-upsell" data-target="section-upsell">Upsell</a>
       </nav>
 
+      <div class="form-fields">
+
       <div class="reseller-id" id="section-reseller">
         <label class="reseller-id-label" for="resellerName">Reseller</label>
         <input type="text" id="resellerName" class="reseller-id-input" placeholder="Reseller / company name" autocomplete="off">
         <p class="field-hint">Used to personalize the diagnosis header and the suggested email.</p>
 
         <label class="contact-name-label" for="contactName">Contact name <span class="opt">(optional)</span>
-          <input type="text" id="contactName" placeholder="e.g. Maria Silva" autocomplete="off">
+          <input type="text" id="contactName" autocomplete="off">
         </label>
         <p class="field-hint">Fills in the "[Contact Name]" greeting in the suggested email.</p>
 
@@ -255,6 +257,8 @@
           <select id="sample-picker"></select>
         </label>
         <button type="button" id="fill-sample" class="btn-secondary">Load sample</button>
+      </div>
+
       </div>
     </form>
 

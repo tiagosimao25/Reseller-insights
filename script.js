@@ -1,5 +1,5 @@
 // ===================================================================
-// Reseller Insights — correlation engine
+// Partner Pulse — correlation engine
 // Each score is a weighted average of whatever inputs are available
 // (weights are renormalized when an input is missing), so the form
 // does not require every field to be filled in. The final outputs
@@ -72,10 +72,16 @@ document.getElementById('copy-email-translated').addEventListener('click', (e) =
   });
 
   function updateActiveLink() {
-    const navBottom = nav.getBoundingClientRect().bottom;
+    // Below 900px the nav stacks above the fields (a wrapped bar, like
+    // before), so its bottom edge is the reveal line. At wider widths it's
+    // a side column instead — its own top edge (pinned via position:sticky)
+    // marks where the visible scroll area begins, since the nav no longer
+    // occupies vertical space above the content.
+    const isNarrow = window.innerWidth <= 900;
+    const revealLine = isNarrow ? nav.getBoundingClientRect().bottom : nav.getBoundingClientRect().top;
     let activeIdx = 0;
     sections.forEach((sec, idx) => {
-      if (sec.getBoundingClientRect().top - navBottom < 40) activeIdx = idx;
+      if (sec.getBoundingClientRect().top - revealLine < 40) activeIdx = idx;
     });
     links.forEach((a, idx) => a.classList.toggle('active', idx === activeIdx));
   }

@@ -282,8 +282,8 @@ body {
   padding: 24px;
   box-shadow: var(--shadow);
   /* grid items default to min-width:auto (sized to content's min-content),
-     so a non-wrapping child like .section-nav's pill row could otherwise
-     force this whole grid column wider than the viewport */
+     so a non-wrapping child could otherwise force this whole grid column
+     wider than the viewport */
   min-width: 0;
 }
 
@@ -292,6 +292,9 @@ body {
   top: 20px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
 }
 
 @media (max-width: 900px) {
@@ -300,54 +303,88 @@ body {
      position:sticky descendants (like .section-nav) stick against, even
      when that ancestor's own content never actually overflows it, which
      stops them from sticking to the real page scroll instead */
-  .form-panel { position: static; max-height: none; overflow-y: visible; }
+  .form-panel { position: static; max-height: none; overflow-y: visible; flex-direction: column; }
 }
 
-/* ===== Section nav (jump-to bar) ===== */
-/* Deliberately NOT bled to the card edges — it stays inset within the same
-   padding every other element in this form uses, so it reads as part of
-   the card instead of a bar pasted over its rounded corners. Sticking to
-   top:0 of the scrolling panel is enough to keep it flush once scrolled;
-   no negative-margin math needed, and nothing to re-tune per breakpoint. */
+.form-fields {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== Section nav (jump-to sidebar) ===== */
+/* A vertical list docked beside the form fields, sticky within the panel's
+   own scroll — every section is always one click away, unlike the old
+   horizontal bar which hid Country Totals/Auto-Renew/Upsell behind a
+   scrollbar with no visual hint they existed. */
 
 .section-nav {
   position: sticky;
   top: 0;
+  align-self: flex-start;
   z-index: 5;
   display: flex;
+  flex-direction: column;
   flex-wrap: nowrap;
+  flex-shrink: 0;
   gap: 4px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  background: var(--surface-1);
-  margin: 0 0 18px;
-  padding: 4px 0 12px;
-  border-bottom: 1px solid var(--gridline);
+  width: 132px;
 }
-.section-nav::-webkit-scrollbar { display: none; }
 
-/* clears the sticky nav's own height so a clicked section's heading lands
-   just below it instead of scrolling to right behind it */
+/* small consistent offset so a scrolled-to heading isn't flush against the
+   panel edge — the sidebar sits beside the fields, not above them, so
+   there's no sticky-bar overlap to compensate for here */
 #section-reseller, #section-renewal, #section-growth, #section-nsb,
 #section-country, #section-autorenew, #section-upsell {
-  scroll-margin-top: 68px;
+  scroll-margin-top: 12px;
 }
 
 .section-nav a {
-  flex-shrink: 0;
-  padding: 5px 12px;
-  border-radius: 999px;
+  padding: 7px 12px;
+  border-radius: 8px;
   font-size: 0.74rem;
   font-weight: 600;
+  line-height: 1.3;
   color: var(--text-muted);
   background: var(--surface-sunken);
   text-decoration: none;
-  white-space: nowrap;
 }
 .section-nav a:hover { color: var(--text-primary); }
 .section-nav a.active { background: var(--accent); color: #fff; }
 .section-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  /* no room for a side column on narrow screens — the nav stacks above the
+     fields as a wrapped pill bar instead, still sticky (now against the
+     page scroll, since .form-panel gives up its own scroll context at this
+     width). flex-wrap (not overflow-x) means every section stays visible
+     without ever hiding behind a scrollbar. */
+  .section-nav {
+    position: sticky;
+    top: 0;
+    background: var(--surface-1);
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: auto;
+    gap: 6px;
+    margin: 0 0 18px;
+    padding: 0 0 14px;
+    border-bottom: 1px solid var(--gridline);
+  }
+  .section-nav a {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+
+  /* the wrapped bar is sticky here, so scrolled-to headings need clearance
+     again — same reasoning as the desktop bar used to need, just resized
+     for this bar's (roughly two-row) height */
+  #section-reseller, #section-renewal, #section-growth, #section-nsb,
+  #section-country, #section-autorenew, #section-upsell {
+    scroll-margin-top: 92px;
+  }
+}
 
 /* ===== Reseller identity ===== */
 
@@ -384,29 +421,11 @@ body {
   flex-shrink: 0;
 }
 
-.reseller-id-input {
-  width: 100%;
-  border: 1px solid var(--gridline);
-  border-radius: 7px;
-  background: var(--surface-1);
-  padding: 8px 10px;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-.reseller-id-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
-
-.reseller-id-input::placeholder {
-  color: var(--text-muted);
-  font-weight: 500;
-}
+/* unlike every other field, this input isn't nested inside its <label> (the
+   label needs its own row layout for the accent-bar marker), so it doesn't
+   naturally inherit the 0.8rem a label-wrapped input gets from `font:
+   inherit` — pin it explicitly so it matches the rest of the form */
+.reseller-id-input { font-size: 0.8rem; }
 
 .reseller-id .field-hint { margin: 8px 0 0; }
 
