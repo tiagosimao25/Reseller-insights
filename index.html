@@ -41,7 +41,6 @@
         </label>
         <div class="wizard-top-actions">
           <button type="button" id="fill-sample" class="btn-secondary">Load sample</button>
-          <button type="reset" class="btn-ghost">Clear</button>
         </div>
       </div>
 
@@ -281,8 +280,11 @@
 
       <div class="wizard-nav">
         <button type="button" id="wizard-back" class="btn-ghost">← Back</button>
-        <button type="button" id="wizard-next" class="btn-primary">Next →</button>
-        <button type="submit" id="wizard-submit" class="btn-primary" hidden>Generate Diagnosis</button>
+        <div class="wizard-nav-right">
+          <button type="button" id="wizard-next" class="btn-primary">Next →</button>
+          <button type="submit" id="wizard-submit" class="btn-primary" hidden>Generate Diagnosis</button>
+          <button type="reset" class="btn-ghost">Clear</button>
+        </div>
       </div>
 
     </form>
@@ -308,7 +310,7 @@
           </div>
           <button type="button" id="export-report" class="btn-export" title="Download this report as an Excel spreadsheet (.xlsx)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12" stroke-linecap="round"/><path d="M7 10l5 5 5-5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19h16" stroke-linecap="round"/></svg>
-            <span>Export .xlsx</span>
+            <span>Export</span>
           </button>
         </div>
 

@@ -358,7 +358,7 @@ body {
 .wizard-step-dot.visited:not([aria-current="step"]) { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
 .wizard-step-dot[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-/* Tooltip reveals a step's name on hover — delayed on the way in (2s) so it
+/* Tooltip reveals a step's name on hover — delayed on the way in (0.5s) so it
    doesn't flash while scanning across dots, but disappears immediately on
    mouse-out. Achieved by declaring transition-delay only on the :hover rule:
    CSS picks the delay of whichever rule is active when the property changes. */
@@ -383,7 +383,7 @@ body {
 .wizard-step-dot:hover .wizard-step-dot-tooltip,
 .wizard-step-dot:focus-visible .wizard-step-dot-tooltip {
   opacity: 1;
-  transition-delay: 2s;
+  transition-delay: 0.5s;
 }
 
 .step-title {
@@ -402,6 +402,11 @@ body {
   margin-top: 22px;
   padding-top: 18px;
   border-top: 1px solid var(--gridline);
+}
+
+.wizard-nav-right {
+  display: flex;
+  gap: 10px;
 }
 
 .wizard-nav .btn-ghost:disabled { opacity: 0.4; cursor: default; }
