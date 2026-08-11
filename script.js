@@ -2209,8 +2209,8 @@ function setTrend(id, pct) {
   const isUp = pct > 0;
   const arrow = isFlat ? '→' : (isUp ? '↑' : '↓');
   const sign = isFlat ? '' : (isUp ? '+' : '');
-  el.textContent = `${arrow} ${sign}${fmt(pct, 1)}%`;
-  el.title = 'Trailing 12-month sales vs. the previous period';
+  el.textContent = `${arrow} ${sign}${fmt(pct, 1)}% YoY`;
+  el.title = 'Trailing 12-month sales vs. the previous 12-month period';
   el.style.color = isFlat ? STATUS_COLOR.neutral : (isUp ? STATUS_COLOR.good : STATUS_COLOR.critical);
   el.hidden = false;
 }
